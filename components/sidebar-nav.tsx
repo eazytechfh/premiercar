@@ -69,7 +69,7 @@ export function SidebarNav() {
 
           <div className="px-4 py-3 border-b border-[#111827] bg-[#0A0A0A]">
             <div className="text-xs text-[#9CA3AF] uppercase tracking-wider mb-1">Código do Cliente</div>
-            <div className="text-lg font-mono font-bold text-[#22C55E]">322.598</div>
+            <div className="text-lg font-mono font-bold text-[#22C55E]">598.322</div>
           </div>
 
           {user && (

@@ -15,7 +15,6 @@ import {
   getLeads,
   updateLeadStage,
   generateResumoComercial,
-  sendPesquisaAtendimentoWebhook,
   deleteLead,
   type Lead,
   ESTAGIO_LABELS,
@@ -50,25 +49,10 @@ import { EditableVeiculoField } from "./editable-veiculo-field"
 import { EditableEmailField } from "./editable-email-field"
 
 // Nova ordem das colunas conforme solicitado
-const COLUNAS_KANBAN = [
-  "oportunidade",
-  "em_qualificacao",
-  "em_negociacao",
-  "resgate",
-  "fechado",
-  "nao_fechou",
-  "pesquisa_atendimento",
-  "follow_up",
-]
+const COLUNAS_KANBAN = ["oportunidade", "em_qualificacao", "em_negociacao", "resgate", "fechado", "nao_fechou", "follow_up"]
 
 // Colunas que o vendedor pode visualizar (ordem específica)
-const COLUNAS_VENDEDOR = [
-  "em_negociacao",
-  "fechado",
-  "nao_fechou",
-  "follow_up",
-  "resgate",
-]
+const COLUNAS_VENDEDOR = ["em_negociacao", "fechado", "nao_fechou", "follow_up", "resgate"]
 
 interface KanbanBoardProps {
   empresaId: number
@@ -92,6 +76,10 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
   const [progressValue, setProgressValue] = useState(0)
   const [visibleColumns, setVisibleColumns] = useState<string[]>(COLUNAS_KANBAN)
 
+  // Para esconder completamente do UI (filtro/debug)
+  const ESTAGIOS_UI = VALID_ESTAGIOS.filter((s) => s !== "pesquisa_atendimento")
+  const ESTAGIO_LABELS_UI = Object.entries(ESTAGIO_LABELS).filter(([key]) => key !== "pesquisa_atendimento")
+
   useEffect(() => {
     loadLeads()
     // Definir colunas visíveis baseado no cargo do usuário
@@ -111,15 +99,15 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
     const user = getCurrentUser()
     if (user) {
       let data = await getLeads(user.id_empresa)
-      
+
       // Se o usuário for vendedor, filtrar apenas os leads atribuídos a ele
       if (user.cargo === "vendedor") {
-        data = data.filter((lead) => 
-          lead.vendedor?.toLowerCase() === user.nome_usuario?.toLowerCase() ||
-          lead.vendedor?.toLowerCase() === user.nome?.toLowerCase()
-        )
+data = data.filter(
+  (lead) =>
+    lead.vendedor?.toLowerCase() === user.nome_usuario?.toLowerCase(),
+)
       }
-      
+
       setLeads(data)
     }
     setLoading(false)
@@ -192,8 +180,6 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
 
     setMovingLead(leadId)
 
-    const leadData = leads.find((lead) => lead.id === leadId)
-
     // Atualização otimista da UI
     setLeads((prevLeads) =>
       prevLeads.map((lead) =>
@@ -220,35 +206,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
         setTimeout(() => setResumoMessage(null), 5000)
       } else {
         console.log("Lead moved successfully")
-
-        if (newStage === "pesquisa_atendimento" && leadData) {
-          console.log("[v0] Lead moved to Pesquisa de Atendimento, triggering webhook")
-
-          try {
-            const webhookSuccess = await sendPesquisaAtendimentoWebhook(leadData)
-
-            if (webhookSuccess) {
-              setResumoMessage({
-                type: "success",
-                text: "Lead movido para Pesquisa de Atendimento e webhook enviado com sucesso!",
-              })
-            } else {
-              setResumoMessage({
-                type: "error",
-                text: "Lead movido, mas houve erro ao enviar webhook de Pesquisa de Atendimento.",
-              })
-            }
-
-            setTimeout(() => setResumoMessage(null), 5000)
-          } catch (webhookError) {
-            console.error("[v0] Error sending pesquisa atendimento webhook:", webhookError)
-            setResumoMessage({
-              type: "error",
-              text: "Lead movido, mas houve erro ao processar webhook de Pesquisa de Atendimento.",
-            })
-            setTimeout(() => setResumoMessage(null), 5000)
-          }
-        }
+        // ✅ Removido: bloco de "pesquisa_atendimento" + webhook
       }
     } catch (error) {
       console.error("Unexpected error moving lead:", error)
@@ -483,9 +441,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
 
       {/* Mensagem de Status Global */}
       {resumoMessage && (
-        <Alert
-          className={`${resumoMessage.type === "success" ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}
-        >
+        <Alert className={`${resumoMessage.type === "success" ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className={resumoMessage.type === "success" ? "text-green-700" : "text-red-700"}>
             {resumoMessage.text}
@@ -501,9 +457,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
               <Loader2 className="h-5 w-5 text-[#22C55E] animate-spin" />
               Gerando Resumo Comercial
             </DialogTitle>
-            <DialogDescription className="text-gray-300">
-              Aguarde enquanto analisamos as informações do lead...
-            </DialogDescription>
+            <DialogDescription className="text-gray-300">Aguarde enquanto analisamos as informações do lead...</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <Progress value={progressValue} className="h-3" />
@@ -513,7 +467,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
       </Dialog>
 
       {viewMode === "list" ? (
-        <LeadsListView leads={leads} onLeadsUpdate={handleLeadsUpdate} />
+        <LeadsListView empresaId={empresaId} leads={leads} onLeadsUpdate={handleLeadsUpdate} />
       ) : (
         <>
           {/* Filtros */}
@@ -554,9 +508,9 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os estágios</SelectItem>
-                    {Object.entries(ESTAGIO_LABELS).map(([key, label]) => (
+                    {ESTAGIO_LABELS_UI.map(([key, label]) => (
                       <SelectItem key={key} value={key}>
-                        {label}
+                        {label as string}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -572,12 +526,9 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                 <Move className="h-5 w-5 text-[#22C55E]" />
                 <div>
                   <p className="text-sm font-medium text-black">
-                    💡 <strong>Como usar:</strong> Arraste e solte os cards dos leads entre as colunas para alterar o
-                    estágio
+                    💡 <strong>Como usar:</strong> Arraste e solte os cards dos leads entre as colunas para alterar o estágio
                   </p>
-                  <p className="text-xs text-gray-700 mt-1">
-                    As alterações são salvas automaticamente no banco de dados
-                  </p>
+                  <p className="text-xs text-gray-700 mt-1">As alterações são salvas automaticamente no banco de dados</p>
                 </div>
               </div>
             </CardContent>
@@ -587,7 +538,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
           <Card className="bg-gray-50 border-gray-200">
             <CardContent className="p-3">
               <div className="text-xs text-gray-600">
-                <strong>Debug:</strong> Estágios válidos: {VALID_ESTAGIOS.join(", ")}
+                <strong>Debug:</strong> Estágios válidos: {ESTAGIOS_UI.join(", ")}
                 {movingLead && <span className="ml-4 text-orange-600">Movendo lead ID: {movingLead}</span>}
               </div>
             </CardContent>
@@ -622,11 +573,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                               </Badge>
                             </div>
                           </CardTitle>
-                          {snapshot.isDraggingOver && (
-                            <div className="text-xs text-blue-600 font-medium animate-pulse">
-                              ↓ Solte aqui para mover
-                            </div>
-                          )}
+                          {snapshot.isDraggingOver && <div className="text-xs text-blue-600 font-medium animate-pulse">↓ Solte aqui para mover</div>}
                         </CardHeader>
                         <CardContent ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
                           {getLeadsByStage(stage).map((lead, index) => (
@@ -637,36 +584,25 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
                                   className={`cursor-grab active:cursor-grabbing transition-all duration-200 ${
-                                    snapshot.isDragging
-                                      ? "shadow-2xl rotate-3 scale-105 bg-white border-blue-300 z-50"
-                                      : "hover:shadow-md hover:-translate-y-1"
+                                    snapshot.isDragging ? "shadow-2xl rotate-3 scale-105 bg-white border-blue-300 z-50" : "hover:shadow-md hover:-translate-y-1"
                                   } ${movingLead === lead.id ? "opacity-50" : ""}`}
-                                  onClick={(e) => {
+                                  onClick={() => {
                                     // Só abre o modal se não estiver arrastando
-                                    if (!snapshot.isDragging) {
-                                      setSelectedLead(lead)
-                                    }
+                                    if (!snapshot.isDragging) setSelectedLead(lead)
                                   }}
                                 >
                                   <CardContent className="p-3">
                                     <div className="space-y-2">
                                       <div className="flex items-center justify-between text-foreground">
-                                        <h4 className="font-medium text-sm text-gray-900 truncate flex-1">
-                                          {lead.nome}
-                                        </h4>
+                                        <h4 className="font-medium text-sm text-gray-900 truncate flex-1">{lead.nome}</h4>
                                         <div className="flex items-center gap-1">
-                                          {movingLead === lead.id && (
-                                            <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
-                                          )}
+                                          {movingLead === lead.id && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
                                           <Move className="h-3 w-3 text-gray-400 flex-shrink-0" />
                                         </div>
                                       </div>
 
                                       {/* Campo de Valor Editável */}
-                                      <div
-                                        className="border border-gray-200 rounded p-1"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
+                                      <div className="border border-gray-200 rounded p-1" onClick={(e) => e.stopPropagation()}>
                                         <EditableValueField
                                           leadId={lead.id}
                                           currentValue={lead.valor || 0}
@@ -692,9 +628,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                                             {lead.origem}
                                           </Badge>
                                         )}
-                                        {lead.vendedor && (
-                                          <span className="text-xs text-gray-500 truncate ml-2">{lead.vendedor}</span>
-                                        )}
+                                        {lead.vendedor && <span className="text-xs text-gray-500 truncate ml-2">{lead.vendedor}</span>}
                                       </div>
                                     </div>
                                   </CardContent>
@@ -752,6 +686,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                   )}
                 </DialogTitle>
               </DialogHeader>
+
               {selectedLead && (
                 <div className="flex flex-col h-full max-h-[80vh]">
                   {/* Header Info - Fixed */}
@@ -759,9 +694,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-semibold text-2xl">{selectedLead.nome}</h3>
-                        <Badge
-                          className={`mt-2 ${ESTAGIO_COLORS[selectedLead.estagio_lead as keyof typeof ESTAGIO_COLORS]}`}
-                        >
+                        <Badge className={`mt-2 ${ESTAGIO_COLORS[selectedLead.estagio_lead as keyof typeof ESTAGIO_COLORS]}`}>
                           {ESTAGIO_LABELS[selectedLead.estagio_lead as keyof typeof ESTAGIO_LABELS]}
                         </Badge>
                       </div>
@@ -806,9 +739,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
 
                       <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                         <Calendar className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm font-medium">
-                          {new Date(selectedLead.created_at).toLocaleDateString("pt-BR")}
-                        </span>
+                        <span className="text-sm font-medium">{new Date(selectedLead.created_at).toLocaleDateString("pt-BR")}</span>
                       </div>
                     </div>
                   </div>
@@ -837,9 +768,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                           <EditableObservacaoField
                             leadId={selectedLead.id}
                             currentObservacao={selectedLead.observacao_vendedor || ""}
-                            onObservacaoUpdate={(newObservacao) =>
-                              handleObservacaoUpdate(selectedLead.id, newObservacao)
-                            }
+                            onObservacaoUpdate={(newObservacao) => handleObservacaoUpdate(selectedLead.id, newObservacao)}
                           />
                         </div>
                       </div>
