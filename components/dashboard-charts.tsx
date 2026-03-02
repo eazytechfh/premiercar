@@ -410,14 +410,19 @@ export function DashboardCharts() {
                     borderRadius: "12px",
                     boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.6)",
                   }}
-                  formatter={(value, name) => [
-                    name === "taxa_conversao" ? `${Number(value).toFixed(1)}%` : value,
-                    name === "total_leads"
-                      ? "📊 Total de Leads"
-                      : name === "leads_fechados"
-                        ? "🎉 Leads Fechados"
-                        : "📈 Taxa de Conversão",
-                  ]}
+                  formatter={(value, name, item) => {
+                    const key = String(item?.dataKey ?? name)
+
+                    if (key === "taxa_conversao" || String(name).includes("Taxa de Convers")) {
+                      return [`${Number(value).toFixed(1)}%`, "Taxa de Conversão (%)"]
+                    }
+
+                    if (key === "leads_fechados" || String(name).includes("Leads Fechados")) {
+                      return [value, "Leads Fechados"]
+                    }
+
+                    return [value, "Total de Leads"]
+                  }}
                 />
                 <Legend wrapperStyle={{ paddingTop: "20px", color: "#fff" }} iconType="circle" />
                 <Bar dataKey="total_leads" fill="url(#totalGradient)" name="Total de Leads" radius={[4, 4, 0, 0]} />
