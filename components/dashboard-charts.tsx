@@ -596,14 +596,19 @@ export function DashboardCharts() {
                     boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.6)",
                     color: "#fff",
                   }}
-                  formatter={(value, name) => [
-                    name === "taxa_conversao" ? `${Number(value).toFixed(1)}%` : value,
-                    name === "total_leads"
-                      ? "📊 Total de Leads"
-                      : name === "leads_fechados"
-                        ? "🎉 Leads Fechados"
-                        : "📈 Taxa de Conversão",
-                  ]}
+                  formatter={(value, name, item) => {
+                    const key = String(item?.dataKey ?? name)
+
+                    if (key === "taxa_conversao" || String(name).includes("Taxa de Convers")) {
+                      return [`${Number(value).toFixed(1)}%`, "Taxa de Conversão (%)"]
+                    }
+
+                    if (key === "leads_fechados" || String(name).includes("Leads Fechados")) {
+                      return [value, "Leads Fechados"]
+                    }
+
+                    return [value, "Total de Leads"]
+                  }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ color: "#fff" }} />
                 <Bar
