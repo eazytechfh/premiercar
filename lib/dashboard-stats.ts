@@ -56,22 +56,29 @@ export async function getDashboardData(idEmpresa: number, filters: DashboardFilt
   if (filters.periodo) {
     const now = new Date()
     const startDate = new Date()
+    const endDate = new Date()
 
-    switch (filters.periodo) {
-      case "7d":
-        startDate.setDate(now.getDate() - 7)
-        break
-      case "30d":
-        startDate.setDate(now.getDate() - 30)
-        break
-      case "90d":
-        startDate.setDate(now.getDate() - 90)
-        break
-      default:
-        startDate.setDate(now.getDate() - 30)
+    if (filters.periodo === "today") {
+      startDate.setHours(0, 0, 0, 0)
+      endDate.setHours(24, 0, 0, 0)
+      query = query.gte("created_at", startDate.toISOString()).lt("created_at", endDate.toISOString())
+    } else {
+      switch (filters.periodo) {
+        case "7d":
+          startDate.setDate(now.getDate() - 7)
+          break
+        case "30d":
+          startDate.setDate(now.getDate() - 30)
+          break
+        case "90d":
+          startDate.setDate(now.getDate() - 90)
+          break
+        default:
+          startDate.setDate(now.getDate() - 30)
+      }
+
+      query = query.gte("created_at", startDate.toISOString())
     }
-
-    query = query.gte("created_at", startDate.toISOString())
   }
 
   const { data: leads, error } = await query
