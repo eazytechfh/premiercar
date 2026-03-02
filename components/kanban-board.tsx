@@ -552,7 +552,7 @@ data = data.filter(
                   <Droppable key={stage} droppableId={stage}>
                     {(provided, snapshot) => (
                       <Card
-                        className={`w-80 min-h-[500px] flex-shrink-0 transition-all duration-200 ${
+                        className={`w-80 h-[70vh] min-h-[500px] flex flex-col flex-shrink-0 overflow-hidden transition-all duration-200 ${
                           snapshot.isDraggingOver
                             ? "bg-gradient-to-b from-blue-50 to-blue-100 border-blue-300 shadow-lg transform scale-105"
                             : "hover:shadow-md"
@@ -575,7 +575,11 @@ data = data.filter(
                           </CardTitle>
                           {snapshot.isDraggingOver && <div className="text-xs text-blue-600 font-medium animate-pulse">↓ Solte aqui para mover</div>}
                         </CardHeader>
-                        <CardContent ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
+                        <CardContent
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className="flex-1 space-y-2 overflow-y-scroll pr-2"
+                        >
                           {getLeadsByStage(stage).map((lead, index) => (
                             <Draggable key={lead.id} draggableId={lead.id.toString()} index={index}>
                               {(provided, snapshot) => (
