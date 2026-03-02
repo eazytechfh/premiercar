@@ -605,17 +605,23 @@ export function parseCurrency(value: string): number {
 export async function getLeadStats(idEmpresa: number) {
   const supabase = createClient()
 
+  const { count: totalLeadsGeral, error: countError } = await supabase
+    .from("BASE_DE_LEADS")
+    .select("*", { count: "exact", head: true })
+    .eq("id_empresa", idEmpresa)
+
   const { data: leads, error } = await supabase
     .from("BASE_DE_LEADS")
     .select("estagio_lead, origem, valor")
     .eq("id_empresa", idEmpresa)
 
-  if (error || !leads) {
+  if (countError || error || !leads) {
     return {
       totalLeads: 0,
+      totalLeadsGeral: 0,
       leadsPorEstagio: {},
       leadsPorOrigem: {},
-      conversao: {},
+      conversao: "0",
       valorTotal: 0,
       valorMedio: 0,
     }
@@ -642,6 +648,7 @@ export async function getLeadStats(idEmpresa: number) {
 
   return {
     totalLeads,
+    totalLeadsGeral: totalLeadsGeral ?? totalLeads,
     leadsPorEstagio,
     leadsPorOrigem,
     conversao,

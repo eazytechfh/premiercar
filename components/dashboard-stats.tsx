@@ -12,14 +12,15 @@ function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(value)
 }
 
 export function DashboardStats() {
   const [stats, setStats] = useState({
     totalLeads: 0,
+    totalLeadsGeral: 0,
     leadsPorEstagio: {} as Record<string, number>,
     leadsPorOrigem: {} as Record<string, number>,
     conversao: "0",
@@ -68,7 +69,7 @@ export function DashboardStats() {
   const statCards = [
     {
       title: "Total de Leads",
-      value: stats.totalLeads,
+      value: stats.totalLeadsGeral || stats.totalLeads,
       subtitle: "Leads cadastrados",
       icon: Users,
       gradient: "from-green-500 to-emerald-500",
