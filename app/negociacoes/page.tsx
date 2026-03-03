@@ -86,7 +86,7 @@ export default function Negociacoes() {
           }
 
           /* ===============================
-             4. Botões verde neon
+             4. Bot?es verde neon
           =============================== */
 
           button:not(.view-toggle-btn-active):not(.view-toggle-btn-outline),
@@ -121,7 +121,7 @@ export default function Negociacoes() {
           }
 
           /* ===============================
-             6. Sidebar — item ativo (Negociações)
+             6. Sidebar ? item ativo (Negocia??es)
           =============================== */
 
           .sidebar nav a[aria-current="page"],
@@ -164,9 +164,9 @@ export default function Negociacoes() {
             color: #FFFFFF !important;
           }
 
-          /* Forçar visibilidade dos botões Kanban/Lista */
+          /* ForÃ§ar visibilidade dos botÃµes Kanban/Lista */
           /* ===============================
-             8. Botões de Visualização (Kanban/Lista)
+             8. Bot?es de Visualiza??o (Kanban/Lista)
           =============================== */
           
           button[variant="outline"],
@@ -211,7 +211,7 @@ export default function Negociacoes() {
             stroke: #22C55E !important;
           }
 
-          /* Garantir que os bot�es dentro do card de visualiza��o sejam vis�veis */
+          /* Garantir que os botões dentro do card de visualização sejam visíveis */
           [class*="CardHeader"] button,
           [class*="card-header"] button {
             display: inline-flex !important;
@@ -221,13 +221,13 @@ export default function Negociacoes() {
         `}</style>
 
         {/* ============================
-             CONTEÚDO DA PÁGINA
+             CONTEÃšDO DA PÃGINA
            ============================ */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-black">
           <div className="container mx-auto px-6 py-8">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold mb-2">Negociações</h1>
-              <p className="text-gray-600">Gerencie seus leads através do funil de vendas</p>
+              <h1 className="text-3xl font-bold mb-2">Negocia??es</h1>
+              <p className="text-gray-600">Gerencie seus leads atrav?s do funil de vendas</p>
             </div>
 
             <KanbanBoard />
