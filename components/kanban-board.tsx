@@ -430,7 +430,9 @@ data = data.filter(
                 variant={viewMode === "kanban" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("kanban")}
-                className="flex items-center gap-2 !bg-[#22C55E] !text-black !border-[#22C55E] hover:!bg-[#22C55E] hover:!text-black"
+                className={`flex items-center gap-2 ${
+                  viewMode === "kanban" ? "view-toggle-btn-active" : "view-toggle-btn-outline"
+                }`}
                 style={{ display: "inline-flex", visibility: "visible", opacity: 1 }}
               >
                 <LayoutGrid className="h-4 w-4" />
@@ -440,7 +442,9 @@ data = data.filter(
                 variant={viewMode === "list" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("list")}
-                className="flex items-center gap-2 !bg-transparent !text-[#22C55E] !border-[#22C55E] hover:!bg-[#22C55E] hover:!text-black"
+                className={`flex items-center gap-2 ${
+                  viewMode === "list" ? "view-toggle-btn-active" : "view-toggle-btn-outline"
+                }`}
                 style={{ display: "inline-flex", visibility: "visible", opacity: 1 }}
               >
                 <List className="h-4 w-4" />

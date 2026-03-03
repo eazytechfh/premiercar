@@ -503,7 +503,7 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId }: LeadsListView
       {/* Lista de Leads */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Leads ({filteredLeads.length})</CardTitle>
+          <CardTitle>Lista de Leads ({filteredLeads.length} de {leads.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

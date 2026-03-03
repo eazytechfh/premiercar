@@ -55,20 +55,34 @@ export const VALID_ESTAGIOS = [
 
 export async function getLeads(idEmpresa: number): Promise<Lead[]> {
   const supabase = createClient()
+  const pageSize = 1000
+  let from = 0
+  const allLeads: Lead[] = []
 
-  // ✅ Alias para padronizar o front: nome <- nome_lead (do banco)
-  const { data, error } = await supabase
-    .from("BASE_DE_LEADS")
-    .select("*, nome:nome_lead")
-    .eq("id_empresa", idEmpresa)
-    .order("created_at", { ascending: false })
+  while (true) {
+    const { data, error } = await supabase
+      .from("BASE_DE_LEADS")
+      .select("*, nome:nome_lead")
+      .eq("id_empresa", idEmpresa)
+      .order("created_at", { ascending: false })
+      .range(from, from + pageSize - 1)
 
-  if (error) {
-    console.error("Error fetching leads:", error)
-    return []
+    if (error) {
+      console.error("Error fetching leads:", error)
+      return []
+    }
+
+    const pageData = (data as Lead[]) || []
+    allLeads.push(...pageData)
+
+    if (pageData.length < pageSize) {
+      break
+    }
+
+    from += pageSize
   }
 
-  return (data as Lead[]) || []
+  return allLeads
 }
 
 export async function updateLeadStage(leadId: number, newStage: string): Promise<boolean> {
@@ -725,3 +739,4 @@ export async function updateLeadDataNascimento(leadId: number, newDataNascimento
     return false
   }
 }
+

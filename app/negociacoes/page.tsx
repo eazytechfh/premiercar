@@ -189,7 +189,29 @@ export default function Negociacoes() {
             border: 1px solid #22C55E !important;
           }
 
-          /* Garantir que os bot√µes dentro do card de visualiza√ß√£o sejam vis√≠veis */
+          .view-toggle-btn-active {
+            background-color: #22C55E !important;
+            color: #000000 !important;
+            border: 1px solid #22C55E !important;
+          }
+
+          .view-toggle-btn-active svg {
+            color: #000000 !important;
+            stroke: #000000 !important;
+          }
+
+          .view-toggle-btn-outline {
+            background-color: transparent !important;
+            color: #22C55E !important;
+            border: 1px solid #22C55E !important;
+          }
+
+          .view-toggle-btn-outline svg {
+            color: #22C55E !important;
+            stroke: #22C55E !important;
+          }
+
+          /* Garantir que os botıes dentro do card de visualizaÁ„o sejam visÌveis */
           [class*="CardHeader"] button,
           [class*="card-header"] button {
             display: inline-flex !important;
@@ -215,3 +237,4 @@ export default function Negociacoes() {
     </div>
   )
 }
+
