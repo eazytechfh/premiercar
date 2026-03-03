@@ -22,9 +22,9 @@ import {
   Search,
   Filter,
   Phone,
-  Mail,
   User,
   Calendar,
+  CreditCard,
   MapPin,
   Car,
   Eye,
@@ -41,7 +41,8 @@ import {
 import { EditableValueField } from "./editable-value-field"
 import { EditableObservacaoField } from "./editable-observacao-field"
 import { EditableVeiculoField } from "./editable-veiculo-field"
-import { EditableEmailField } from "./editable-email-field"
+import { EditableCpfField } from "./editable-cpf-field"
+import { EditableDataNascimentoField } from "./editable-data-nascimento-field"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 
@@ -178,13 +179,28 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId }: LeadsListView
     onLeadsUpdate()
   }
 
-  const handleEmailUpdate = (leadId: number, newEmail: string) => {
+  const handleCpfUpdate = (leadId: number, newCpf: string) => {
     // Atualizar localmente para feedback imediato
-    setFilteredLeads((prevLeads) => prevLeads.map((lead) => (lead.id === leadId ? { ...lead, email: newEmail } : lead)))
+    setFilteredLeads((prevLeads) => prevLeads.map((lead) => (lead.id === leadId ? { ...lead, cpf: newCpf } : lead)))
 
     // Atualizar o lead selecionado se for o mesmo
     if (selectedLead && selectedLead.id === leadId) {
-      setSelectedLead({ ...selectedLead, email: newEmail })
+      setSelectedLead({ ...selectedLead, cpf: newCpf })
+    }
+
+    // Chamar callback para atualizar dados principais
+    onLeadsUpdate()
+  }
+
+  const handleDataNascimentoUpdate = (leadId: number, newDataNascimento: string) => {
+    // Atualizar localmente para feedback imediato
+    setFilteredLeads((prevLeads) =>
+      prevLeads.map((lead) => (lead.id === leadId ? { ...lead, data_nascimento: newDataNascimento } : lead)),
+    )
+
+    // Atualizar o lead selecionado se for o mesmo
+    if (selectedLead && selectedLead.id === leadId) {
+      setSelectedLead({ ...selectedLead, data_nascimento: newDataNascimento })
     }
 
     // Chamar callback para atualizar dados principais
@@ -637,10 +653,21 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId }: LeadsListView
                     </div>
                   )}
 
-                  {selectedLead.email && (
+                  {selectedLead.cpf && (
                     <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                      <Mail className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium truncate">{selectedLead.email}</span>
+                      <CreditCard className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium truncate">{selectedLead.cpf}</span>
+                    </div>
+                  )}
+
+                  {selectedLead.data_nascimento && (
+                    <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                      <Calendar className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium">
+                        {new Date(`${selectedLead.data_nascimento.split("T")[0]}T00:00:00`).toLocaleDateString(
+                          "pt-BR",
+                        )}
+                      </span>
                     </div>
                   )}
 
@@ -713,12 +740,25 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId }: LeadsListView
                       />
                     </div>
 
-                    {/* E-mail - Editável */}
+                    {/* CPF - Editável */}
                     <div>
-                      <EditableEmailField
+                      <EditableCpfField
                         leadId={selectedLead.id}
-                        currentEmail={selectedLead.email || ""}
-                        onEmailUpdate={(newEmail) => handleEmailUpdate(selectedLead.id, newEmail)}
+                        currentCpf={selectedLead.cpf || ""}
+                        onCpfUpdate={(newCpf) => handleCpfUpdate(selectedLead.id, newCpf)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Data de Nascimento - Editável */}
+                    <div>
+                      <EditableDataNascimentoField
+                        leadId={selectedLead.id}
+                        currentDataNascimento={selectedLead.data_nascimento || ""}
+                        onDataNascimentoUpdate={(newDataNascimento) =>
+                          handleDataNascimentoUpdate(selectedLead.id, newDataNascimento)
+                        }
                       />
                     </div>
                   </div>

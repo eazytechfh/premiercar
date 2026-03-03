@@ -6,6 +6,8 @@ export interface Lead {
   nome: string
   telefone?: string
   email?: string
+  cpf?: string
+  data_nascimento?: string
   origem?: string
   vendedor?: string
   veiculo_interesse?: string
@@ -672,6 +674,54 @@ export async function deleteLead(leadId: number): Promise<boolean> {
     return true
   } catch (error) {
     console.error("Unexpected error deleting lead:", error)
+    return false
+  }
+}
+
+export async function updateLeadCpf(leadId: number, newCpf: string): Promise<boolean> {
+  const supabase = createClient()
+
+  try {
+    const { error } = await supabase
+      .from("BASE_DE_LEADS")
+      .update({
+        cpf: newCpf || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", leadId)
+
+    if (error) {
+      console.error("Error updating lead cpf:", error)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error("Unexpected error updating lead cpf:", error)
+    return false
+  }
+}
+
+export async function updateLeadDataNascimento(leadId: number, newDataNascimento: string): Promise<boolean> {
+  const supabase = createClient()
+
+  try {
+    const { error } = await supabase
+      .from("BASE_DE_LEADS")
+      .update({
+        data_nascimento: newDataNascimento || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", leadId)
+
+    if (error) {
+      console.error("Error updating lead data_nascimento:", error)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error("Unexpected error updating lead data_nascimento:", error)
     return false
   }
 }
