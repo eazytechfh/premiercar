@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress"
 import {
   getLeads,
   getLeadsCount,
+  updateLeadBasicInfo,
   updateLeadStage,
   generateResumoComercial,
   deleteLead,
@@ -23,6 +24,7 @@ import {
   VALID_ESTAGIOS,
   formatCurrency,
 } from "@/lib/leads"
+import { getVendedores, type Vendedor } from "@/lib/agendamentos"
 import { getCurrentUser } from "@/lib/auth"
 import {
   Search,
@@ -42,6 +44,7 @@ import {
   Move,
   AlertTriangle,
   Trash2,
+  Pencil,
 } from "lucide-react"
 import { LeadsListView } from "./leads-list-view"
 import { EditableValueField } from "./editable-value-field"
@@ -78,6 +81,11 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
   const [progressValue, setProgressValue] = useState(0)
   const [visibleColumns, setVisibleColumns] = useState<string[]>(COLUNAS_KANBAN)
   const [totalLeadsCount, setTotalLeadsCount] = useState(0)
+  const [vendedores, setVendedores] = useState<Vendedor[]>([])
+  const [isEditingLeadInfo, setIsEditingLeadInfo] = useState(false)
+  const [savingLeadInfo, setSavingLeadInfo] = useState(false)
+  const [editLeadNome, setEditLeadNome] = useState("")
+  const [editLeadVendedor, setEditLeadVendedor] = useState("")
 
   // Para esconder completamente do UI (filtro/debug)
   const ESTAGIOS_UI = VALID_ESTAGIOS.filter((s) => s !== "pesquisa_atendimento")
@@ -98,11 +106,27 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
     filterLeads()
   }, [leads, searchTerm, filterOrigem, filterEstagio])
 
+  useEffect(() => {
+    if (!selectedLead) {
+      setIsEditingLeadInfo(false)
+      setEditLeadNome("")
+      setEditLeadVendedor("")
+      return
+    }
+
+    setEditLeadNome(selectedLead.nome || "")
+    setEditLeadVendedor(selectedLead.vendedor || "")
+  }, [selectedLead])
+
   const loadLeads = async () => {
     const user = getCurrentUser()
     if (user) {
-      let data = await getLeads(user.id_empresa)
-      const totalCount = await getLeadsCount(user.id_empresa)
+      const [leadsData, totalCount, vendedoresData] = await Promise.all([
+        getLeads(user.id_empresa),
+        getLeadsCount(user.id_empresa),
+        getVendedores(user.id_empresa),
+      ])
+      let data = leadsData
 
       // Se o usuário for vendedor, filtrar apenas os leads atribuídos a ele
       if (user.cargo === "vendedor") {
@@ -114,6 +138,7 @@ data = data.filter(
 
       setLeads(data)
       setTotalLeadsCount(totalCount)
+      setVendedores(vendedoresData)
     }
     setLoading(false)
   }
@@ -382,6 +407,43 @@ data = data.filter(
       setTimeout(() => {
         setResumoMessage(null)
       }, 5000)
+    }
+  }
+
+  const handleSaveLeadInfo = async () => {
+    if (!selectedLead) return
+
+    const normalizedNome = editLeadNome.trim()
+    if (!normalizedNome) return
+
+    setSavingLeadInfo(true)
+
+    try {
+      const success = await updateLeadBasicInfo(selectedLead.id, normalizedNome, editLeadVendedor)
+
+      if (success) {
+        setLeads((prevLeads) =>
+          prevLeads.map((lead) =>
+            lead.id === selectedLead.id ? { ...lead, nome: normalizedNome, vendedor: editLeadVendedor } : lead,
+          ),
+        )
+        setSelectedLead({ ...selectedLead, nome: normalizedNome, vendedor: editLeadVendedor })
+        setIsEditingLeadInfo(false)
+      } else {
+        setResumoMessage({
+          type: "error",
+          text: "Erro ao editar lead. Tente novamente.",
+        })
+        setTimeout(() => setResumoMessage(null), 4000)
+      }
+    } catch (error) {
+      setResumoMessage({
+        type: "error",
+        text: "Erro inesperado ao editar lead.",
+      })
+      setTimeout(() => setResumoMessage(null), 4000)
+    } finally {
+      setSavingLeadInfo(false)
     }
   }
 
@@ -679,7 +741,13 @@ data = data.filter(
           </DragDropContext>
 
           {/* Modal de Detalhes do Lead - Com Botão Gerar Resumo */}
-          <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
+          <Dialog
+            open={!!selectedLead}
+            onOpenChange={() => {
+              setSelectedLead(null)
+              setIsEditingLeadInfo(false)
+            }}
+          >
             <DialogContent className="max-w-5xl max-h-[95vh] w-[95vw] overflow-hidden">
               <DialogHeader className="pb-4 border-b">
                 <DialogTitle className="flex items-center justify-between text-xl">
@@ -688,25 +756,35 @@ data = data.filter(
                     Detalhes do Lead
                   </div>
                   {selectedLead && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteLead(selectedLead.id)}
-                      disabled={deletingLead === selectedLead.id}
-                      className="flex items-center gap-2"
-                    >
-                      {deletingLead === selectedLead.id ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Excluindo...
-                        </>
-                      ) : (
-                        <>
-                          <Trash2 className="h-4 w-4" />
-                          Excluir Lead
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => setIsEditingLeadInfo((prev) => !prev)}
+                        className="flex items-center gap-2 bg-[#22C55E] text-black hover:bg-[#16A34A]"
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Editar Lead
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteLead(selectedLead.id)}
+                        disabled={deletingLead === selectedLead.id}
+                        className="flex items-center gap-2"
+                      >
+                        {deletingLead === selectedLead.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Excluindo...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4" />
+                            Excluir Lead
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   )}
                 </DialogTitle>
               </DialogHeader>
@@ -723,6 +801,59 @@ data = data.filter(
                         </Badge>
                       </div>
                     </div>
+
+                    {isEditingLeadInfo && (
+                      <div className="p-4 border border-green-300 rounded-lg bg-green-50 space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-sm font-medium text-green-900">Nome do Lead</label>
+                            <Input
+                              value={editLeadNome}
+                              onChange={(e) => setEditLeadNome(e.target.value)}
+                              placeholder="Digite o nome do lead"
+                              className="mt-1"
+                              disabled={savingLeadInfo}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-green-900">Vendedor</label>
+                            <Select value={editLeadVendedor || "__none__"} onValueChange={(value) => setEditLeadVendedor(value === "__none__" ? "" : value)}>
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Selecione um vendedor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">Sem vendedor</SelectItem>
+                                {vendedores.map((v) => (
+                                  <SelectItem key={v.id} value={v.nome}>
+                                    {v.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setEditLeadNome(selectedLead.nome || "")
+                              setEditLeadVendedor(selectedLead.vendedor || "")
+                              setIsEditingLeadInfo(false)
+                            }}
+                            disabled={savingLeadInfo}
+                          >
+                            Cancelar
+                          </Button>
+                          <Button
+                            onClick={handleSaveLeadInfo}
+                            disabled={savingLeadInfo || !editLeadNome.trim()}
+                            className="bg-[#22C55E] text-black hover:bg-[#16A34A]"
+                          >
+                            {savingLeadInfo ? "Salvando..." : "Salvar alterações"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Informações Básicas em Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

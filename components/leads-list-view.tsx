@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { type Lead, ESTAGIO_LABELS, ESTAGIO_COLORS, updateLeadStage, generateResumoComercial, sendFollowUpWebhook, sendMensagemWebhook, deleteLead } from "@/lib/leads"
+import { type Lead, ESTAGIO_LABELS, ESTAGIO_COLORS, updateLeadStage, generateResumoComercial, sendFollowUpWebhook, sendMensagemWebhook, deleteLead, updateLeadBasicInfo } from "@/lib/leads"
+import { getVendedores, type Vendedor } from "@/lib/agendamentos"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,7 @@ import {
   Trash2,
   Send,
   MessageSquare,
+  Pencil,
 } from "lucide-react"
 import { EditableValueField } from "./editable-value-field"
 import { EditableObservacaoField } from "./editable-observacao-field"
@@ -68,10 +70,36 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
   const [processingAction, setProcessingAction] = useState(false)
   const [showMessageModal, setShowMessageModal] = useState(false)
   const [messageText, setMessageText] = useState("")
+  const [vendedores, setVendedores] = useState<Vendedor[]>([])
+  const [isEditingLeadInfo, setIsEditingLeadInfo] = useState(false)
+  const [savingLeadInfo, setSavingLeadInfo] = useState(false)
+  const [editLeadNome, setEditLeadNome] = useState("")
+  const [editLeadVendedor, setEditLeadVendedor] = useState("")
 
   React.useEffect(() => {
     filterLeads()
   }, [leads, searchTerm, filterOrigem, filterEstagio])
+
+  React.useEffect(() => {
+    const loadVendedores = async () => {
+      const data = await getVendedores(empresaId)
+      setVendedores(data)
+    }
+
+    loadVendedores()
+  }, [empresaId])
+
+  React.useEffect(() => {
+    if (!selectedLead) {
+      setIsEditingLeadInfo(false)
+      setEditLeadNome("")
+      setEditLeadVendedor("")
+      return
+    }
+
+    setEditLeadNome(selectedLead.nome || "")
+    setEditLeadVendedor(selectedLead.vendedor || "")
+  }, [selectedLead])
 
   const filterLeads = () => {
     let filtered = [...leads]
@@ -263,6 +291,44 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
       setTimeout(() => {
         setResumoMessage(null)
       }, 5000)
+    }
+  }
+
+  const handleSaveLeadInfo = async () => {
+    if (!selectedLead) return
+
+    const normalizedNome = editLeadNome.trim()
+    if (!normalizedNome) return
+
+    setSavingLeadInfo(true)
+
+    try {
+      const success = await updateLeadBasicInfo(selectedLead.id, normalizedNome, editLeadVendedor)
+
+      if (success) {
+        setFilteredLeads((prevLeads) =>
+          prevLeads.map((lead) =>
+            lead.id === selectedLead.id ? { ...lead, nome: normalizedNome, vendedor: editLeadVendedor } : lead,
+          ),
+        )
+        setSelectedLead({ ...selectedLead, nome: normalizedNome, vendedor: editLeadVendedor })
+        setIsEditingLeadInfo(false)
+        onLeadsUpdate()
+      } else {
+        setResumoMessage({
+          type: "error",
+          text: "Erro ao editar lead. Tente novamente.",
+        })
+        setTimeout(() => setResumoMessage(null), 4000)
+      }
+    } catch (error) {
+      setResumoMessage({
+        type: "error",
+        text: "Erro inesperado ao editar lead.",
+      })
+      setTimeout(() => setResumoMessage(null), 4000)
+    } finally {
+      setSavingLeadInfo(false)
     }
   }
 
@@ -622,12 +688,30 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
       </Card>
 
       {/* Modal de Detalhes do Lead - Com Campos Editáveis */}
-      <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
+      <Dialog
+        open={!!selectedLead}
+        onOpenChange={() => {
+          setSelectedLead(null)
+          setIsEditingLeadInfo(false)
+        }}
+      >
         <DialogContent className="max-w-5xl max-h-[95vh] w-[95vw] overflow-hidden">
           <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <User className="h-6 w-6" />
-              Detalhes do Lead
+            <DialogTitle className="flex items-center justify-between text-xl">
+              <div className="flex items-center gap-2">
+                <User className="h-6 w-6" />
+                Detalhes do Lead
+              </div>
+              {selectedLead && (
+                <Button
+                  size="sm"
+                  onClick={() => setIsEditingLeadInfo((prev) => !prev)}
+                  className="flex items-center gap-2 bg-[#22C55E] text-black hover:bg-[#16A34A]"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Editar Lead
+                </Button>
+              )}
             </DialogTitle>
           </DialogHeader>
           {selectedLead && (
@@ -644,6 +728,62 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
                     </Badge>
                   </div>
                 </div>
+
+                {isEditingLeadInfo && (
+                  <div className="p-4 border border-green-300 rounded-lg bg-green-50 space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-sm font-medium text-green-900">Nome do Lead</label>
+                        <Input
+                          value={editLeadNome}
+                          onChange={(e) => setEditLeadNome(e.target.value)}
+                          placeholder="Digite o nome do lead"
+                          className="mt-1"
+                          disabled={savingLeadInfo}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-green-900">Vendedor</label>
+                        <Select
+                          value={editLeadVendedor || "__none__"}
+                          onValueChange={(value) => setEditLeadVendedor(value === "__none__" ? "" : value)}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Selecione um vendedor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">Sem vendedor</SelectItem>
+                            {vendedores.map((v) => (
+                              <SelectItem key={v.id} value={v.nome}>
+                                {v.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditLeadNome(selectedLead.nome || "")
+                          setEditLeadVendedor(selectedLead.vendedor || "")
+                          setIsEditingLeadInfo(false)
+                        }}
+                        disabled={savingLeadInfo}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={handleSaveLeadInfo}
+                        disabled={savingLeadInfo || !editLeadNome.trim()}
+                        className="bg-[#22C55E] text-black hover:bg-[#16A34A]"
+                      >
+                        {savingLeadInfo ? "Salvando..." : "Salvar alterações"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Informações Básicas em Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

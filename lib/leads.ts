@@ -732,6 +732,31 @@ export async function updateLeadCpf(leadId: number, newCpf: string): Promise<boo
   }
 }
 
+export async function updateLeadBasicInfo(leadId: number, nome: string, vendedor: string): Promise<boolean> {
+  const supabase = createClient()
+
+  try {
+    const { error } = await supabase
+      .from("BASE_DE_LEADS")
+      .update({
+        nome_lead: nome,
+        vendedor,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", leadId)
+
+    if (error) {
+      console.error("Error updating lead basic info:", error)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error("Unexpected error updating lead basic info:", error)
+    return false
+  }
+}
+
 export async function updateLeadDataNascimento(leadId: number, newDataNascimento: string): Promise<boolean> {
   const supabase = createClient()
 
