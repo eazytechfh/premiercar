@@ -439,6 +439,9 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
   }
 
   const origens = [...new Set(leads.map((lead) => lead.origem).filter(Boolean))]
+  const vendedoresFallback = [...new Set(leads.map((lead) => lead.vendedor).filter(Boolean))]
+    .map((nome) => ({ id: `lead-${nome}`, nome: nome as string }))
+  const vendedoresOptions = vendedores.length > 0 ? vendedores : vendedoresFallback
 
   return (
     <div className="space-y-4">
@@ -753,7 +756,7 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="__none__">Sem vendedor</SelectItem>
-                            {vendedores.map((v) => (
+                            {vendedoresOptions.map((v) => (
                               <SelectItem key={v.id} value={v.nome}>
                                 {v.nome}
                               </SelectItem>
