@@ -50,6 +50,7 @@ export function SidebarNav() {
       {/* Sidebar */}
       <div
         className={`
+          sidebar
           fixed inset-y-0 left-0 z-40 w-64 
           bg-black text-white shadow-2xl border-r border-[#111827]
           transform transition-transform duration-300 ease-in-out
