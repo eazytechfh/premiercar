@@ -85,6 +85,22 @@ export async function getLeads(idEmpresa: number): Promise<Lead[]> {
   return allLeads
 }
 
+export async function getLeadsCount(idEmpresa: number): Promise<number> {
+  const supabase = createClient()
+
+  const { count, error } = await supabase
+    .from("BASE_DE_LEADS")
+    .select("*", { count: "exact", head: true })
+    .eq("id_empresa", idEmpresa)
+
+  if (error) {
+    console.error("Error fetching leads count:", error)
+    return 0
+  }
+
+  return count ?? 0
+}
+
 export async function updateLeadStage(leadId: number, newStage: string): Promise<boolean> {
   // Validar se o estágio é válido
   if (!VALID_ESTAGIOS.includes(newStage)) {

@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import {
   getLeads,
+  getLeadsCount,
   updateLeadStage,
   generateResumoComercial,
   deleteLead,
@@ -76,6 +77,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
   const [showProgressDialog, setShowProgressDialog] = useState(false)
   const [progressValue, setProgressValue] = useState(0)
   const [visibleColumns, setVisibleColumns] = useState<string[]>(COLUNAS_KANBAN)
+  const [totalLeadsCount, setTotalLeadsCount] = useState(0)
 
   // Para esconder completamente do UI (filtro/debug)
   const ESTAGIOS_UI = VALID_ESTAGIOS.filter((s) => s !== "pesquisa_atendimento")
@@ -100,6 +102,7 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
     const user = getCurrentUser()
     if (user) {
       let data = await getLeads(user.id_empresa)
+      const totalCount = await getLeadsCount(user.id_empresa)
 
       // Se o usuário for vendedor, filtrar apenas os leads atribuídos a ele
       if (user.cargo === "vendedor") {
@@ -110,6 +113,7 @@ data = data.filter(
       }
 
       setLeads(data)
+      setTotalLeadsCount(totalCount)
     }
     setLoading(false)
   }
@@ -483,7 +487,7 @@ data = data.filter(
       </Dialog>
 
       {viewMode === "list" ? (
-        <LeadsListView empresaId={empresaId} leads={leads} onLeadsUpdate={handleLeadsUpdate} />
+        <LeadsListView empresaId={empresaId} leads={leads} totalLeadsCount={totalLeadsCount} onLeadsUpdate={handleLeadsUpdate} />
       ) : (
         <>
           {/* Filtros */}

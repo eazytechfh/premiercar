@@ -89,7 +89,7 @@ export default function Negociacoes() {
              4. Botões verde neon
           =============================== */
 
-          button,
+          button:not(.view-toggle-btn-active):not(.view-toggle-btn-outline),
           .btn,
           .shadcn-button,
           .kanban-button {
@@ -100,7 +100,7 @@ export default function Negociacoes() {
             transition: 0.2s ease-in-out !important;
           }
 
-          button:hover,
+          button:not(.view-toggle-btn-active):not(.view-toggle-btn-outline):hover,
           .btn:hover,
           .shadcn-button:hover,
           .kanban-button:hover {

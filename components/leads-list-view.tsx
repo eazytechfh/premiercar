@@ -50,9 +50,10 @@ interface LeadsListViewProps {
   leads: Lead[]
   onLeadsUpdate: () => void
   empresaId: number
+  totalLeadsCount?: number
 }
 
-export function LeadsListView({ leads, onLeadsUpdate, empresaId }: LeadsListViewProps) {
+export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount }: LeadsListViewProps) {
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>(leads)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -503,7 +504,7 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId }: LeadsListView
       {/* Lista de Leads */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Leads ({filteredLeads.length} de {leads.length})</CardTitle>
+          <CardTitle>Lista de Leads ({filteredLeads.length} de {totalLeadsCount ?? leads.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
