@@ -159,6 +159,8 @@ export async function addCompanyMember(memberData: {
   const email = memberData.email.trim().toLowerCase()
   const nomeUsuario = memberData.nome_usuario.trim()
   const senha = memberData.senha.trim()
+  const telefone = memberData.telefone?.trim() || null
+  const cargo = memberData.cargo || "convidado"
 
   if (!nomeUsuario || !email || !senha) {
     return { success: false, error: "Preencha nome, e-mail e senha para adicionar o membro." }
@@ -183,7 +185,7 @@ export async function addCompanyMember(memberData: {
     return { success: false, error: "Este e-mail já está cadastrado no sistema." }
   }
 
-  const { error } = await supabase
+  const { data: createdMember, error } = await supabase
     .from("AUTORIZAÇÃO")
     .insert({
       id_empresa: memberData.id_empresa,
@@ -191,11 +193,13 @@ export async function addCompanyMember(memberData: {
       nome_usuario: nomeUsuario,
       email,
       senha,
-      telefone: memberData.telefone || null,
+      telefone,
       plano: "gratuito",
       status: memberData.status || "ativo",
-      cargo: memberData.cargo || "convidado",
+      cargo,
     })
+    .select("id")
+    .single()
 
   if (error) {
     console.error("Error adding company member:", error)
@@ -216,6 +220,35 @@ export async function addCompanyMember(memberData: {
     }
 
     return { success: false, error: `Erro ao adicionar membro: ${error.message}` }
+  }
+
+  if (cargo === "vendedor") {
+    const { error: vendedorError } = await supabase.from("VENDEDORES").insert({
+      NOME: nomeUsuario,
+      TELEFONE: telefone,
+      EMAIL: email,
+      CARGO: cargo,
+      ID_EMPRESA: memberData.id_empresa,
+      ATIVO: true,
+      atender: "espera",
+      quantos_lead: 0,
+    })
+
+    if (vendedorError) {
+      console.error("Error adding vendedor in VENDEDORES:", vendedorError)
+
+      if (createdMember?.id) {
+        const { error: rollbackError } = await supabase.from("AUTORIZAÇÃO").delete().eq("id", createdMember.id)
+        if (rollbackError) {
+          console.error("Error rolling back member creation:", rollbackError)
+        }
+      }
+
+      return {
+        success: false,
+        error: `Erro ao criar vendedor na tabela VENDEDORES: ${vendedorError.message}`,
+      }
+    }
   }
 
   return { success: true }
