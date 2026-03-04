@@ -258,14 +258,43 @@ export async function getVendedores(idEmpresa: string | number): Promise<Vendedo
 
   const { data, error } = await supabase
     .from("VENDEDORES")
-    .select("id, nome, telefone, cargo, id_empresa")
-    .eq("id_empresa", empresaId)
-    .order("nome", { ascending: true })
+    .select("id:ID_VENDEDOR, nome:NOME, telefone:TELEFONE, cargo:CARGO, id_empresa:ID_EMPRESA")
+    .eq("ID_EMPRESA", empresaId)
+    .eq("ATIVO", true)
+    .order("NOME", { ascending: true })
 
   if (error) {
     console.error("[v0] Error fetching vendedores:", error.message)
-    return []
   }
 
-  return data || []
+  const vendedoresTabela = (data as Vendedor[]) || []
+
+  // Fallback: vendedores cadastrados como usuários do sistema
+  const { data: vendedoresUsuarios, error: vendedoresUsuariosError } = await supabase
+    .from("AUTORIZAÃ‡ÃƒO")
+    .select("id, nome_usuario")
+    .eq("id_empresa", empresaId)
+    .eq("cargo", "vendedor")
+    .eq("status", "ativo")
+    .order("nome_usuario", { ascending: true })
+
+  if (vendedoresUsuariosError) {
+    console.error("[v0] Error fetching vendedores from AUTORIZAÇÃO:", vendedoresUsuariosError.message)
+    return vendedoresTabela
+  }
+
+  const vendedoresUsuariosMapeados: Vendedor[] = (vendedoresUsuarios || []).map((u: any) => ({
+    id: String(u.id),
+    nome: u.nome_usuario,
+  }))
+
+  const mergedByNome = new Map<string, Vendedor>()
+  for (const vendedor of [...vendedoresTabela, ...vendedoresUsuariosMapeados]) {
+    if (!vendedor?.nome) continue
+    if (!mergedByNome.has(vendedor.nome)) {
+      mergedByNome.set(vendedor.nome, vendedor)
+    }
+  }
+
+  return Array.from(mergedByNome.values()).sort((a, b) => a.nome.localeCompare(b.nome))
 }

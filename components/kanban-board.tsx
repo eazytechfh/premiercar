@@ -59,6 +59,15 @@ const COLUNAS_KANBAN = ["oportunidade", "em_qualificacao", "em_negociacao", "res
 // Colunas que o vendedor pode visualizar (ordem específica)
 const COLUNAS_VENDEDOR = ["em_negociacao", "fechado", "nao_fechou", "follow_up", "resgate"]
 
+function normalizeSellerName(value?: string | null) {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+}
+
 interface KanbanBoardProps {
   empresaId: number
 }
@@ -130,10 +139,8 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
 
       // Se o usuário for vendedor, filtrar apenas os leads atribuídos a ele
       if (user.cargo === "vendedor") {
-data = data.filter(
-  (lead) =>
-    lead.vendedor?.toLowerCase() === user.nome_usuario?.toLowerCase(),
-)
+        const currentSeller = normalizeSellerName(user.nome_usuario)
+        data = data.filter((lead) => normalizeSellerName(lead.vendedor) === currentSeller)
       }
 
       setLeads(data)
