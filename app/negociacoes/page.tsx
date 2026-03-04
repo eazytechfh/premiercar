@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth"
 import { SidebarNav } from "@/components/sidebar-nav"
@@ -8,12 +8,15 @@ import { KanbanBoard } from "@/components/kanban-board"
 
 export default function Negociacoes() {
   const router = useRouter()
+  const [empresaId, setEmpresaId] = useState<number | null>(null)
 
   useEffect(() => {
     const user = getCurrentUser()
     if (!user) {
       router.push("/")
+      return
     }
+    setEmpresaId(user.id_empresa)
   }, [router])
 
   return (
@@ -121,7 +124,7 @@ export default function Negociacoes() {
           }
 
           /* ===============================
-             6. Sidebar ? item ativo (Negocia??es)
+             6. Sidebar ? item ativo (Negociações)
           =============================== */
 
           .sidebar nav a[aria-current="page"],
@@ -226,11 +229,11 @@ export default function Negociacoes() {
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-black">
           <div className="container mx-auto px-6 py-8">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold mb-2">Negocia??es</h1>
+              <h1 className="text-3xl font-bold mb-2">Negociações</h1>
               <p className="text-gray-600">Gerencie seus leads atrav?s do funil de vendas</p>
             </div>
 
-            <KanbanBoard />
+            {empresaId !== null && <KanbanBoard empresaId={empresaId} />}
           </div>
         </main>
       </div>
