@@ -265,6 +265,18 @@ export async function updateMemberStatus(
 
   const supabase = createClient()
 
+  const { data: memberData, error: memberError } = await supabase
+    .from("AUTORIZAÇÃO")
+    .select("status, cargo, email, nome_usuario")
+    .eq("id", memberId)
+    .eq("id_empresa", currentUser.id_empresa)
+    .maybeSingle()
+
+  if (memberError || !memberData) {
+    console.error("Error fetching member before status update:", memberError)
+    return { success: false, error: "Membro não encontrado para atualização de status." }
+  }
+
   const { error } = await supabase
     .from("AUTORIZAÇÃO")
     .update({
@@ -277,6 +289,41 @@ export async function updateMemberStatus(
   if (error) {
     console.error("Error updating member status:", error)
     return { success: false, error: "Erro ao atualizar status do membro." }
+  }
+
+  if (status === "inativo" && memberData.cargo === "vendedor") {
+    let vendedorQuery = supabase.from("VENDEDORES").update({
+      ATIVO: false,
+      atender: null,
+      UPDATED_AT: new Date().toISOString(),
+    })
+
+    if (memberData.email) {
+      vendedorQuery = vendedorQuery.eq("EMAIL", memberData.email)
+    } else {
+      vendedorQuery = vendedorQuery.eq("NOME", memberData.nome_usuario)
+    }
+
+    const { error: vendedorUpdateError } = await vendedorQuery.eq("ID_EMPRESA", currentUser.id_empresa)
+
+    if (vendedorUpdateError) {
+      console.error("Error syncing vendedor status in VENDEDORES:", vendedorUpdateError)
+
+      const { error: rollbackError } = await supabase
+        .from("AUTORIZAÇÃO")
+        .update({
+          status: memberData.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", memberId)
+        .eq("id_empresa", currentUser.id_empresa)
+
+      if (rollbackError) {
+        console.error("Error rolling back member status after vendedor sync failure:", rollbackError)
+      }
+
+      return { success: false, error: "Erro ao sincronizar vendedor na tabela VENDEDORES." }
+    }
   }
 
   return { success: true }
