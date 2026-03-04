@@ -156,36 +156,66 @@ export async function addCompanyMember(memberData: {
   cargo?: "administrador" | "convidado" | "sdr" | "gestor" | "vendedor"
 }): Promise<{ success: boolean; error?: string }> {
   const supabase = createClient()
+  const email = memberData.email.trim().toLowerCase()
+  const nomeUsuario = memberData.nome_usuario.trim()
+  const senha = memberData.senha.trim()
 
-  const { data: existingUser } = await supabase
+  if (!nomeUsuario || !email || !senha) {
+    return { success: false, error: "Preencha nome, e-mail e senha para adicionar o membro." }
+  }
+
+  if (senha.length < 6) {
+    return { success: false, error: "A senha deve ter pelo menos 6 caracteres." }
+  }
+
+  const { data: existingUser, error: existingUserError } = await supabase
     .from("AUTORIZAÇÃO")
     .select("email")
-    .eq("email", memberData.email)
-    .single()
+    .ilike("email", email)
+    .maybeSingle()
+
+  if (existingUserError) {
+    console.error("Error checking existing member e-mail:", existingUserError)
+    return { success: false, error: "Erro ao validar e-mail do membro. Tente novamente." }
+  }
 
   if (existingUser) {
     return { success: false, error: "Este e-mail já está cadastrado no sistema." }
   }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("AUTORIZAÇÃO")
     .insert({
       id_empresa: memberData.id_empresa,
       nome_empresa: memberData.nome_empresa,
-      nome: memberData.nome_usuario,
-      nome_usuario: memberData.nome_usuario,
-      email: memberData.email,
-      senha: memberData.senha,
+      nome_usuario: nomeUsuario,
+      email,
+      senha,
       telefone: memberData.telefone || null,
       plano: "gratuito",
       status: memberData.status || "ativo",
       cargo: memberData.cargo || "convidado",
     })
-    .select()
 
   if (error) {
     console.error("Error adding company member:", error)
-    return { success: false, error: "Erro ao adicionar membro. Tente novamente." }
+    if (error.code === "23505") {
+      return { success: false, error: "Este e-mail já está cadastrado no sistema." }
+    }
+
+    const errorMessage = (error.message || "").toLowerCase()
+    if (errorMessage.includes("cargo") && errorMessage.includes("check")) {
+      return {
+        success: false,
+        error: "Cargo não permitido pelo banco atual. Ajuste a constraint de cargo ou selecione outro cargo.",
+      }
+    }
+
+    if (errorMessage.includes("status") && errorMessage.includes("check")) {
+      return { success: false, error: "Status inválido para o banco atual. Tente novamente com Ativo." }
+    }
+
+    return { success: false, error: `Erro ao adicionar membro: ${error.message}` }
   }
 
   return { success: true }
