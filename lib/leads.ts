@@ -21,6 +21,7 @@ export interface Lead {
 }
 
 export const ESTAGIO_LABELS = {
+  novos_leads: "Novos Leads",
   oportunidade: "Oportunidade",
   em_qualificacao: "Em Qualificação",
   em_negociacao: "Em Negociação",
