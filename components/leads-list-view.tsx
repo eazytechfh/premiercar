@@ -40,6 +40,7 @@ import {
   Send,
   MessageSquare,
   Pencil,
+  Download,
 } from "lucide-react"
 import { EditableValueField } from "./editable-value-field"
 import { EditableObservacaoField } from "./editable-observacao-field"
@@ -64,6 +65,9 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
   const [searchTerm, setSearchTerm] = useState("")
   const [filterOrigem, setFilterOrigem] = useState("")
   const [filterEstagio, setFilterEstagio] = useState("")
+  const [filterEtiqueta, setFilterEtiqueta] = useState("")
+  const [filterDataInicio, setFilterDataInicio] = useState("")
+  const [filterDataFim, setFilterDataFim] = useState("")
   const [updatingStage, setUpdatingStage] = useState<number | null>(null)
   const [generatingResumo, setGeneratingResumo] = useState(false)
   const [resumoMessage, setResumoMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
@@ -81,7 +85,7 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
 
   React.useEffect(() => {
     filterLeads()
-  }, [leads, searchTerm, filterOrigem, filterEstagio])
+  }, [leads, searchTerm, filterOrigem, filterEstagio, filterEtiqueta, filterDataInicio, filterDataFim])
 
   React.useEffect(() => {
     const loadVendedores = async () => {
@@ -124,7 +128,89 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
       filtered = filtered.filter((lead) => lead.estagio_lead === filterEstagio)
     }
 
+    if (filterEtiqueta && filterEtiqueta !== "all") {
+      filtered = filtered.filter((lead) =>
+        (lead.etiquetas || []).some((tag) => tag.nome === filterEtiqueta),
+      )
+    }
+
+    if (filterDataInicio) {
+      const startDate = new Date(`${filterDataInicio}T00:00:00`)
+      filtered = filtered.filter((lead) => new Date(lead.created_at) >= startDate)
+    }
+
+    if (filterDataFim) {
+      const endDate = new Date(`${filterDataFim}T23:59:59.999`)
+      filtered = filtered.filter((lead) => new Date(lead.created_at) <= endDate)
+    }
+
     setFilteredLeads(filtered)
+  }
+
+  const formatDateForCsv = (value?: string) => {
+    if (!value) return ""
+    return new Date(value).toLocaleDateString("pt-BR")
+  }
+
+  const escapeCsvValue = (value: unknown) => {
+    const stringValue = String(value ?? "")
+    const escaped = stringValue.replace(/"/g, '""')
+    return `"${escaped}"`
+  }
+
+  const handleExportCsv = () => {
+    const headers = [
+      "ID",
+      "Nome",
+      "Telefone",
+      "Email",
+      "CPF",
+      "Data de Nascimento",
+      "Origem",
+      "Vendedor",
+      "Veículo de Interesse",
+      "Estágio",
+      "Valor",
+      "Observação do Vendedor",
+      "Resumo de Qualificação",
+      "Resumo Comercial",
+      "Etiquetas",
+      "Criado em",
+      "Atualizado em",
+    ]
+
+    const rows = filteredLeads.map((lead) => [
+      lead.id,
+      lead.nome,
+      lead.telefone || "",
+      lead.email || "",
+      lead.cpf || "",
+      formatDateForCsv(lead.data_nascimento),
+      lead.origem || "",
+      lead.vendedor || "",
+      lead.veiculo_interesse || "",
+      ESTAGIO_LABELS[lead.estagio_lead as keyof typeof ESTAGIO_LABELS] || lead.estagio_lead,
+      lead.valor || 0,
+      lead.observacao_vendedor || "",
+      lead.resumo_qualificacao || "",
+      lead.resumo_comercial || "",
+      (lead.etiquetas || []).map((tag) => tag.nome).join(" | "),
+      formatDateForCsv(lead.created_at),
+      formatDateForCsv(lead.updated_at),
+    ])
+
+    const csvContent = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(";")).join("\n")
+    const blob = new Blob(["\ufeff", csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    const dateLabel = new Date().toISOString().slice(0, 10)
+
+    link.href = url
+    link.download = `leads-filtrados-${dateLabel}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   const handleStageChange = async (leadId: number, newStage: string, currentStage: string) => {
@@ -452,6 +538,8 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
   }
 
   const origens = [...new Set(leads.map((lead) => lead.origem).filter(Boolean))]
+  const etiquetasDisponiveis = [...new Set(leads.flatMap((lead) => (lead.etiquetas || []).map((tag) => tag.nome)))]
+    .sort((a, b) => a.localeCompare(b))
   const vendedoresFallback = [...new Set(leads.map((lead) => lead.vendedor).filter(Boolean))]
     .map((nome) => ({ id: `lead-${nome}`, nome: nome as string }))
   const vendedoresOptions = vendedores.length > 0 ? vendedores : vendedoresFallback
@@ -461,13 +549,19 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
       {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </CardTitle>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filtros
+            </CardTitle>
+            <Button onClick={handleExportCsv} variant="outline" className="border-green-500 text-green-700 hover:bg-green-50">
+              <Download className="mr-2 h-4 w-4" />
+              Exportar CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
@@ -503,6 +597,31 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
                 ))}
               </SelectContent>
             </Select>
+            <Select value={filterEtiqueta} onValueChange={setFilterEtiqueta}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por etiqueta" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as etiquetas</SelectItem>
+                {etiquetasDisponiveis.map((etiqueta) => (
+                  <SelectItem key={etiqueta} value={etiqueta}>
+                    {etiqueta}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              type="date"
+              value={filterDataInicio}
+              onChange={(e) => setFilterDataInicio(e.target.value)}
+              placeholder="Data início"
+            />
+            <Input
+              type="date"
+              value={filterDataFim}
+              onChange={(e) => setFilterDataFim(e.target.value)}
+              placeholder="Data fim"
+            />
           </div>
         </CardContent>
       </Card>
