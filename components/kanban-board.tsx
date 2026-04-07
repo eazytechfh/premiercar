@@ -26,6 +26,7 @@ import {
 } from "@/lib/leads"
 import { getVendedores, type Vendedor } from "@/lib/agendamentos"
 import { getCurrentUser } from "@/lib/auth"
+import { type LeadTag } from "@/lib/lead-tags"
 import {
   Search,
   Filter,
@@ -52,6 +53,8 @@ import { EditableObservacaoField } from "./editable-observacao-field"
 import { EditableVeiculoField } from "./editable-veiculo-field"
 import { EditableCpfField } from "./editable-cpf-field"
 import { EditableDataNascimentoField } from "./editable-data-nascimento-field"
+import { LeadStageDropdown } from "./lead-stage-dropdown"
+import { LeadTagsManager } from "./lead-tags-manager"
 
 const COLUNAS_ADMIN = [
   "novos_leads",
@@ -453,6 +456,14 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
     }
   }
 
+  const handleTagsUpdate = (leadId: number, tags: LeadTag[]) => {
+    setLeads((prevLeads) => prevLeads.map((lead) => (lead.id === leadId ? { ...lead, etiquetas: tags } : lead)))
+
+    if (selectedLead && selectedLead.id === leadId) {
+      setSelectedLead({ ...selectedLead, etiquetas: tags })
+    }
+  }
+
   const getLeadsByStage = (stage: string) => {
     return filteredLeads.filter((lead) => lead.estagio_lead === stage)
   }
@@ -706,6 +717,21 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                                         </div>
                                       </div>
 
+                                      {!!lead.etiquetas?.length && (
+                                        <div className="flex flex-wrap gap-1">
+                                          {lead.etiquetas.slice(0, 2).map((tag) => (
+                                            <Badge key={tag.id} className="bg-green-600 text-white text-[10px]">
+                                              {tag.nome}
+                                            </Badge>
+                                          ))}
+                                          {lead.etiquetas.length > 2 && (
+                                            <Badge variant="outline" className="text-[10px]">
+                                              +{lead.etiquetas.length - 2}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      )}
+
                                       <div className="border border-gray-200 rounded p-1" onClick={(e) => e.stopPropagation()}>
                                         <EditableValueField
                                           leadId={lead.id}
@@ -779,6 +805,34 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
 
                   {selectedLead && (
                     <div className="flex items-center gap-2">
+                      <LeadStageDropdown
+                        currentStage={selectedLead.estagio_lead}
+                        loading={movingLead === selectedLead.id}
+                        onStageChange={async (newStage) => {
+                          if (!selectedLead) return
+                          setMovingLead(selectedLead.id)
+                          const previousStage = selectedLead.estagio_lead
+                          setLeads((prevLeads) =>
+                            prevLeads.map((lead) =>
+                              lead.id === selectedLead.id ? { ...lead, estagio_lead: newStage } : lead,
+                            ),
+                          )
+                          setSelectedLead({ ...selectedLead, estagio_lead: newStage })
+
+                          const success = await updateLeadStage(selectedLead.id, newStage)
+
+                          if (!success) {
+                            setLeads((prevLeads) =>
+                              prevLeads.map((lead) =>
+                                lead.id === selectedLead.id ? { ...lead, estagio_lead: previousStage } : lead,
+                              ),
+                            )
+                            setSelectedLead({ ...selectedLead, estagio_lead: previousStage })
+                          }
+
+                          setMovingLead(null)
+                        }}
+                      />
                       <Button
                         size="sm"
                         onClick={() => setIsEditingLeadInfo((prev) => !prev)}
@@ -821,6 +875,15 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                         <Badge className={`mt-2 ${ESTAGIO_COLORS[selectedLead.estagio_lead as keyof typeof ESTAGIO_COLORS]}`}>
                           {ESTAGIO_LABELS[selectedLead.estagio_lead as keyof typeof ESTAGIO_LABELS]}
                         </Badge>
+                        {!!selectedLead.etiquetas?.length && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {selectedLead.etiquetas.map((tag) => (
+                              <Badge key={tag.id} className="bg-green-600 text-white">
+                                {tag.nome}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -979,6 +1042,14 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                             currentCpf={selectedLead.cpf || ""}
                             onCpfUpdate={(newCpf) => handleCpfUpdate(selectedLead.id, newCpf)}
                           />
+                          <div className="mt-4">
+                            <LeadTagsManager
+                              leadId={selectedLead.id}
+                              empresaId={empresaId}
+                              selectedTags={selectedLead.etiquetas || []}
+                              onTagsChange={(tags) => handleTagsUpdate(selectedLead.id, tags)}
+                            />
+                          </div>
                         </div>
                       </div>
 

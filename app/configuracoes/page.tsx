@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser, type User } from "@/lib/auth"
 import { SidebarNav } from "@/components/sidebar-nav"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,17 +10,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { User, Building, CreditCard, Users, Shield, Lock } from "lucide-react"
+import { User as UserIcon, Building, CreditCard, Users, Shield, Lock } from "lucide-react"
 import { EditProfileForm } from "@/components/edit-profile-form"
 import { AddMemberForm } from "@/components/add-member-form"
 import { MembersManagement } from "@/components/members-management"
 import { getCompanyMembers, STATUS_LABELS, CARGO_LABELS, canManageMembers } from "@/lib/auth"
+import { LeadTagsSettingsCard } from "@/components/lead-tags-settings-card"
 
 export default function Configuracoes() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
-  const [companyMembers, setCompanyMembers] = useState<any[]>([])
+  const [companyMembers, setCompanyMembers] = useState<User[]>([])
   const [isAddingMember, setIsAddingMember] = useState(false)
   const [loadingMembers, setLoadingMembers] = useState(true)
 
@@ -169,7 +170,7 @@ export default function Configuracoes() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
+                    <UserIcon className="h-5 w-5" />
                     Informações Pessoais
                   </CardTitle>
                 </CardHeader>
@@ -333,6 +334,8 @@ export default function Configuracoes() {
                   )}
                 </CardContent>
               </Card>
+
+              <LeadTagsSettingsCard empresaId={user.id_empresa} />
             </div>
           </div>
         </main>

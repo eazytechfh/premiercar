@@ -20,7 +20,13 @@ import {
   Area,
   AreaChart,
 } from "recharts"
-import { getDashboardData, type DashboardFilters } from "@/lib/dashboard-stats"
+import {
+  getDashboardData,
+  type DashboardFilters,
+  type OrigemStats,
+  type VeiculoStats,
+  type VendedorStats,
+} from "@/lib/dashboard-stats"
 import { getCurrentUser } from "@/lib/auth"
 import { TrendingUp, Users, Car, Target, Filter, RotateCcw, BarChart3, Activity } from "lucide-react"
 
@@ -40,19 +46,17 @@ const COLORS = [
 const ESTAGIO_COLORS = {
   oportunidade: "#3b82f6",
   em_qualificacao: "#f59e0b",
-  qualificado: "#10b981",
+  em_negociacao: "#10b981",
   follow_up: "#22c55e",
-  nutricao: "#f97316",
+  pesquisa_atendimento: "#f97316",
   fechado: "#059669",
   nao_fechou: "#dc2626",
 }
 
-const GRADIENT_COLORS = {
-  primary: "from-green-600 via-emerald-600 to-teal-500",
-  secondary: "from-gray-800 via-gray-900 to-black",
-  success: "from-green-400 to-emerald-500",
-  warning: "from-yellow-400 to-orange-500",
-  danger: "from-red-400 to-pink-500",
+type EstagioResumoItem = {
+  estagio: string
+  quantidade: number
+  percentual: string
 }
 
 export function DashboardCharts() {
@@ -88,14 +92,14 @@ export function DashboardCharts() {
   }
 
   // Ensure arrays have default values to prevent undefined errors
-  const estagioResumo = dashboardData?.estagioResumo || []
-  const vendedorStats = dashboardData?.vendedorStats || []
-  const topVeiculos = dashboardData?.topVeiculos || []
-  const origemStats = dashboardData?.origemStats || []
+  const estagioResumo: EstagioResumoItem[] = dashboardData?.estagioResumo || []
+  const vendedorStats: VendedorStats[] = dashboardData?.vendedorStats || []
+  const topVeiculos: VeiculoStats[] = dashboardData?.veiculoStats || []
+  const origemStats: OrigemStats[] = dashboardData?.origemStats || []
   const valorPorEstagio = dashboardData?.valorPorEstagio || []
   const tendencias = dashboardData?.tendencias || []
-  const availableVendedores = dashboardData?.availableVendedores || []
-  const availableOrigens = dashboardData?.availableOrigens || []
+  const availableVendedores: string[] = dashboardData?.availableVendedores || []
+  const availableOrigens: string[] = dashboardData?.availableOrigens || []
 
   if (loading || !dashboardData) {
     return (
@@ -179,7 +183,7 @@ export function DashboardCharts() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">👥 Todos os vendedores</SelectItem>
-                  {dashboardData.availableVendedores.map((vendedor: string) => (
+                  {availableVendedores.map((vendedor) => (
                     <SelectItem key={vendedor} value={vendedor}>
                       👤 {vendedor}
                     </SelectItem>
@@ -199,7 +203,7 @@ export function DashboardCharts() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">🌐 Todas as origens</SelectItem>
-                  {dashboardData.availableOrigens.map((origem: string) => (
+                  {availableOrigens.map((origem) => (
                     <SelectItem key={origem} value={origem}>
                       📍 {origem}
                     </SelectItem>
@@ -296,13 +300,13 @@ export function DashboardCharts() {
                     const labels = {
                       oportunidade: "🎯 Oportunidade",
                       em_qualificacao: "⏳ Em Qualificação",
-                      qualificado: "✅ Qualificado",
+                      em_negociacao: "💬 Em Negociação",
                       follow_up: "📞 Follow Up",
-                      nutricao: "🌱 Nutrição",
+                      pesquisa_atendimento: "🧪 Pesquisa Atendimento",
                       fechado: "🎉 Fechado",
                       nao_fechou: "❌ Não Fechou",
                     }
-                    return labels[label] || label
+                    return labels[label as keyof typeof labels] || label
                   }}
                 />
                 <Bar
@@ -317,10 +321,10 @@ export function DashboardCharts() {
 
             {/* Lista compacta dos estágios */}
             <div className="mt-4 space-y-2 max-h-40 overflow-y-auto">
-              {dashboardData.estagioResumo
-                .sort((a, b) => b.quantidade - a.quantidade)
+              {[...estagioResumo]
+                .sort((a: EstagioResumoItem, b: EstagioResumoItem) => b.quantidade - a.quantidade)
                 .slice(0, 5)
-                .map((item, index) => (
+                .map((item: EstagioResumoItem, index: number) => (
                   <div
                     key={item.estagio}
                     className="flex items-center justify-between p-2 bg-black/80 rounded-lg border border-gray-700"
@@ -342,12 +346,12 @@ export function DashboardCharts() {
                           ? "Oportunidade"
                           : item.estagio === "em_qualificacao"
                             ? "Em Qualificação"
-                            : item.estagio === "qualificado"
-                              ? "Qualificado"
+                            : item.estagio === "em_negociacao"
+                              ? "Em Negociação"
                               : item.estagio === "follow_up"
                                 ? "Follow Up"
-                                : item.estagio === "nutricao"
-                                  ? "Nutrição"
+                                : item.estagio === "pesquisa_atendimento"
+                                  ? "Pesquisa Atendimento"
                                   : item.estagio === "fechado"
                                     ? "Fechado"
                                     : item.estagio === "nao_fechou"
@@ -380,7 +384,7 @@ export function DashboardCharts() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={dashboardData.vendedorStats} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+              <BarChart data={vendedorStats} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
                 <defs>
                   <linearGradient id="totalGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.9} />
@@ -444,7 +448,7 @@ export function DashboardCharts() {
 
             {/* Top 3 Vendedores - caixas pretas */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {dashboardData.vendedorStats.slice(0, 3).map((vendedor, index) => (
+              {vendedorStats.slice(0, 3).map((vendedor: VendedorStats, index: number) => (
                 <div key={vendedor.vendedor} className="p-4 rounded-xl border border-gray-700 bg-black">
                   <div className="flex items-center gap-3">
                     <div
@@ -498,7 +502,7 @@ export function DashboardCharts() {
                   ))}
                 </defs>
                 <Pie
-                  data={dashboardData.veiculoStats.slice(0, 8)}
+                  data={topVeiculos.slice(0, 8)}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -512,7 +516,7 @@ export function DashboardCharts() {
                   stroke="#000"
                   strokeWidth={2}
                 >
-                  {dashboardData.veiculoStats.slice(0, 8).map((_: any, index: number) => (
+                  {topVeiculos.slice(0, 8).map((_, index: number) => (
                     <Cell key={`cell-${index}`} fill={`url(#pieGradient${index % COLORS.length})`} />
                   ))}
                 </Pie>
@@ -532,7 +536,7 @@ export function DashboardCharts() {
 
             {/* Top 5 Veículos Lista - caixas pretas */}
             <div className="mt-4 space-y-2">
-              {dashboardData.veiculoStats.slice(0, 5).map((veiculo: any, index: number) => (
+              {topVeiculos.slice(0, 5).map((veiculo: VeiculoStats, index: number) => (
                 <div
                   key={veiculo.veiculo}
                   className="flex items-center justify-between p-3 bg-black/80 rounded-lg border border-gray-700"
@@ -571,7 +575,7 @@ export function DashboardCharts() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={dashboardData.origemStats} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
+              <BarChart data={origemStats} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
                 <defs>
                   <linearGradient id="origemTotalGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.9} />
@@ -635,7 +639,7 @@ export function DashboardCharts() {
 
             {/* Resumo das Origens - caixas pretas */}
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-              {dashboardData.origemStats.slice(0, 4).map((origem, index) => (
+              {origemStats.slice(0, 4).map((origem: OrigemStats, index: number) => (
                 <div key={origem.origem} className="p-3 bg-black/80 rounded-lg border border-gray-700">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-white">📍 {origem.origem}</span>
@@ -709,10 +713,10 @@ export function DashboardCharts() {
                 />
                 <Area
                   type="monotone"
-                  dataKey="qualificado"
+                  dataKey="em_negociacao"
                   stackId="1"
-                  stroke={ESTAGIO_COLORS.qualificado}
-                  fill={`url(#areaqualificado)`}
+                  stroke={ESTAGIO_COLORS.em_negociacao}
+                  fill={`url(#areaem_negociacao)`}
                   name="✅ Qualificado"
                   strokeWidth={2}
                 />

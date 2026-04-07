@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { type Lead, ESTAGIO_LABELS, ESTAGIO_COLORS, updateLeadStage, generateResumoComercial, sendFollowUpWebhook, sendMensagemWebhook, deleteLead, updateLeadBasicInfo } from "@/lib/leads"
 import { getVendedores, type Vendedor } from "@/lib/agendamentos"
+import { type LeadTag } from "@/lib/lead-tags"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +48,8 @@ import { EditableCpfField } from "./editable-cpf-field"
 import { EditableDataNascimentoField } from "./editable-data-nascimento-field"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
+import { LeadStageDropdown } from "./lead-stage-dropdown"
+import { LeadTagsManager } from "./lead-tags-manager"
 
 interface LeadsListViewProps {
   leads: Lead[]
@@ -233,6 +236,16 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
     }
 
     // Chamar callback para atualizar dados principais
+    onLeadsUpdate()
+  }
+
+  const handleTagsUpdate = (leadId: number, tags: LeadTag[]) => {
+    setFilteredLeads((prevLeads) => prevLeads.map((lead) => (lead.id === leadId ? { ...lead, etiquetas: tags } : lead)))
+
+    if (selectedLead && selectedLead.id === leadId) {
+      setSelectedLead({ ...selectedLead, etiquetas: tags })
+    }
+
     onLeadsUpdate()
   }
 
@@ -611,6 +624,20 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
                     <TableCell className="font-medium">
                       <div>
                         <div className="font-semibold">{lead.nome}</div>
+                        {!!lead.etiquetas?.length && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {lead.etiquetas.slice(0, 2).map((tag) => (
+                              <Badge key={tag.id} className="bg-green-600 text-white text-[10px]">
+                                {tag.nome}
+                              </Badge>
+                            ))}
+                            {lead.etiquetas.length > 2 && (
+                              <Badge variant="outline" className="text-[10px]">
+                                +{lead.etiquetas.length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
                         <div className="text-sm text-gray-500 md:hidden">
                           {lead.telefone && (
                             <span className="flex items-center gap-1 mt-1">
@@ -706,14 +733,23 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
                 Detalhes do Lead
               </div>
               {selectedLead && (
-                <Button
-                  size="sm"
-                  onClick={() => setIsEditingLeadInfo((prev) => !prev)}
-                  className="flex items-center gap-2 bg-[#22C55E] text-black hover:bg-[#16A34A]"
-                >
-                  <Pencil className="h-4 w-4" />
-                  Editar Lead
-                </Button>
+                <div className="flex items-center gap-2">
+                  <LeadStageDropdown
+                    currentStage={selectedLead.estagio_lead}
+                    loading={updatingStage === selectedLead.id}
+                    onStageChange={async (newStage) => {
+                      await handleStageChange(selectedLead.id, newStage, selectedLead.estagio_lead)
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => setIsEditingLeadInfo((prev) => !prev)}
+                    className="flex items-center gap-2 bg-[#22C55E] text-black hover:bg-[#16A34A]"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Editar Lead
+                  </Button>
+                </div>
               )}
             </DialogTitle>
           </DialogHeader>
@@ -729,6 +765,15 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
                     >
                       {ESTAGIO_LABELS[selectedLead.estagio_lead as keyof typeof ESTAGIO_LABELS]}
                     </Badge>
+                    {!!selectedLead.etiquetas?.length && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {selectedLead.etiquetas.map((tag) => (
+                          <Badge key={tag.id} className="bg-green-600 text-white">
+                            {tag.nome}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -891,6 +936,14 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
                         currentCpf={selectedLead.cpf || ""}
                         onCpfUpdate={(newCpf) => handleCpfUpdate(selectedLead.id, newCpf)}
                       />
+                      <div className="mt-4">
+                        <LeadTagsManager
+                          leadId={selectedLead.id}
+                          empresaId={empresaId}
+                          selectedTags={selectedLead.etiquetas || []}
+                          onTagsChange={(tags) => handleTagsUpdate(selectedLead.id, tags)}
+                        />
+                      </div>
                     </div>
                   </div>
 

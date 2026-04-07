@@ -18,7 +18,7 @@ import {
   ESTAGIO_AGENDAMENTO_COLORS,
 } from "@/lib/agendamentos"
 import { getCurrentUser } from "@/lib/auth"
-import { Search, Filter, Trash2, Edit2, Phone, Calendar, Clock, User } from "lucide-react"
+import { Search, Filter, Trash2, Edit2, Phone, Calendar, User } from "lucide-react"
 
 export function AgendamentosListView() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
@@ -32,7 +32,6 @@ export function AgendamentosListView() {
   const [formData, setFormData] = useState({
     modelo_veiculo: "",
     data_agendamento: "",
-    hora_agendamento: "",
     id_vendedor: "",
     observacoes: "",
   })
@@ -64,14 +63,14 @@ export function AgendamentosListView() {
     if (searchTerm) {
       filtered = filtered.filter(
         (a) =>
-          a.nome_lead.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (a.nome_lead || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
           a.telefone?.includes(searchTerm) ||
-          a.vendedor?.toLowerCase().includes(searchTerm.toLowerCase()),
+          a.vendedor_nome?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
     if (filterEstagio && filterEstagio !== "all") {
-      filtered = filtered.filter((a) => a.estagio_agendamento === filterEstagio)
+      filtered = filtered.filter((a) => a.status === filterEstagio)
     }
 
     setFilteredAgendamentos(filtered)
@@ -80,11 +79,10 @@ export function AgendamentosListView() {
   const handleOpenAgendamento = (agendamento: Agendamento) => {
     setSelectedAgendamento(agendamento)
     setFormData({
-      modelo_veiculo: agendamento.modelo_veiculo || "",
+      modelo_veiculo: agendamento.descricao || "",
       data_agendamento: agendamento.data_agendamento || "",
-      hora_agendamento: agendamento.hora_agendamento || "",
-      id_vendedor: agendamento.id_vendedor?.toString() || "",
-      observacoes: agendamento.observacoes || "",
+      id_vendedor: agendamento.vendedor_id?.toString() || "",
+      observacoes: agendamento.local || "",
     })
   }
 
@@ -92,19 +90,18 @@ export function AgendamentosListView() {
     if (!selectedAgendamento) return
 
     await updateAgendamento(selectedAgendamento.id, {
-      modelo_veiculo: formData.modelo_veiculo,
+      descricao: formData.modelo_veiculo,
       data_agendamento: formData.data_agendamento,
-      hora_agendamento: formData.hora_agendamento,
-      id_vendedor: formData.id_vendedor ? Number.parseInt(formData.id_vendedor) : undefined,
-      vendedor: vendedores.find((v) => v.id.toString() === formData.id_vendedor)?.vendedor,
-      observacoes: formData.observacoes,
+      vendedor_id: formData.id_vendedor || undefined,
+      vendedor_nome: vendedores.find((v) => v.id.toString() === formData.id_vendedor)?.nome,
+      local: formData.observacoes,
     })
 
     await loadData()
     setSelectedAgendamento(null)
   }
 
-  const handleDeleteAgendamento = async (agendamentoId: number) => {
+  const handleDeleteAgendamento = async (agendamentoId: string) => {
     if (!confirm("Tem certeza que deseja excluir este agendamento?")) return
 
     await deleteAgendamento(agendamentoId)
@@ -174,18 +171,8 @@ export function AgendamentosListView() {
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center justify-between">
                           <h3 className="font-semibold text-gray-900">{agendamento.nome_lead}</h3>
-                          <Badge
-                            className={
-                              ESTAGIO_AGENDAMENTO_COLORS[
-                                agendamento.estagio_agendamento as keyof typeof ESTAGIO_AGENDAMENTO_COLORS
-                              ]
-                            }
-                          >
-                            {
-                              ESTAGIO_AGENDAMENTO_LABELS[
-                                agendamento.estagio_agendamento as keyof typeof ESTAGIO_AGENDAMENTO_LABELS
-                              ]
-                            }
+                          <Badge className={ESTAGIO_AGENDAMENTO_COLORS[agendamento.status as keyof typeof ESTAGIO_AGENDAMENTO_COLORS]}>
+                            {ESTAGIO_AGENDAMENTO_LABELS[agendamento.status as keyof typeof ESTAGIO_AGENDAMENTO_LABELS]}
                           </Badge>
                         </div>
 
@@ -196,26 +183,19 @@ export function AgendamentosListView() {
                               {agendamento.telefone}
                             </div>
                           )}
-                          {agendamento.modelo_veiculo && (
-                            <div className="text-gray-700">Veículo: {agendamento.modelo_veiculo}</div>
+                          {agendamento.descricao && (
+                            <div className="text-gray-700">Veículo: {agendamento.descricao}</div>
                           )}
                           {agendamento.data_agendamento && (
                             <div className="flex items-center gap-2">
                               <Calendar className="h-4 w-4" />
                               {new Date(agendamento.data_agendamento).toLocaleDateString("pt-BR")}
-                              {agendamento.hora_agendamento && (
-                                <>
-                                  {" "}
-                                  <Clock className="h-4 w-4" />
-                                  {agendamento.hora_agendamento}
-                                </>
-                              )}
                             </div>
                           )}
-                          {agendamento.vendedor && (
+                          {agendamento.vendedor_nome && (
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4" />
-                              {agendamento.vendedor}
+                              {agendamento.vendedor_nome}
                             </div>
                           )}
                         </div>
@@ -272,16 +252,6 @@ export function AgendamentosListView() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Hora</label>
-                <Input
-                  type="time"
-                  value={formData.hora_agendamento}
-                  onChange={(e) => setFormData({ ...formData, hora_agendamento: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
                 <label className="text-sm font-medium text-gray-700">Vendedor</label>
                 <Select
                   value={formData.id_vendedor}
@@ -293,7 +263,7 @@ export function AgendamentosListView() {
                   <SelectContent>
                     {vendedores.map((v) => (
                       <SelectItem key={v.id} value={v.id.toString()}>
-                        {v.vendedor}
+                        {v.nome}
                       </SelectItem>
                     ))}
                   </SelectContent>

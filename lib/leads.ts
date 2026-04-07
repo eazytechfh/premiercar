@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/client"
+import { getLeadTagsMap, type LeadTag } from "@/lib/lead-tags"
 
 export interface Lead {
   id: number
@@ -16,6 +17,7 @@ export interface Lead {
   resumo_comercial?: string
   valor: number
   observacao_vendedor?: string
+  etiquetas?: LeadTag[]
   created_at: string
   updated_at: string
 }
@@ -83,7 +85,12 @@ export async function getLeads(idEmpresa: number): Promise<Lead[]> {
     from += pageSize
   }
 
-  return allLeads
+  const leadTagsMap = await getLeadTagsMap(idEmpresa)
+
+  return allLeads.map((lead) => ({
+    ...lead,
+    etiquetas: leadTagsMap[lead.id] || [],
+  }))
 }
 
 export async function getLeadsCount(idEmpresa: number): Promise<number> {

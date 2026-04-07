@@ -88,7 +88,7 @@ export function EditableEmailField({ leadId, currentEmail, onEmailUpdate, classN
           <Button
             size="sm"
             onClick={handleSave}
-            disabled={loading || (editValue && !isValidEmail(editValue))}
+            disabled={loading || (editValue.length > 0 && !isValidEmail(editValue))}
             className="h-7 w-7 p-0 bg-green-600 hover:bg-green-700"
           >
             <Check className="h-3 w-3" />
