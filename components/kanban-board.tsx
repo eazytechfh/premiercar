@@ -26,7 +26,7 @@ import {
 } from "@/lib/leads"
 import { getVendedores, type Vendedor } from "@/lib/agendamentos"
 import { getCurrentUser } from "@/lib/auth"
-import { type LeadTag } from "@/lib/lead-tags"
+import { getLeadTagColorMeta, getLeadTagDisplayStyle, type LeadTag } from "@/lib/lead-tags"
 import {
   Search,
   Filter,
@@ -720,9 +720,13 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                                       {!!lead.etiquetas?.length && (
                                         <div className="flex flex-wrap gap-1">
                                           {lead.etiquetas.slice(0, 2).map((tag) => (
-                                            <Badge key={tag.id} className="bg-green-600 text-white text-[10px]">
+                                            <span
+                                              key={tag.id}
+                                              className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold"
+                                              style={getLeadTagDisplayStyle(tag.cor)}
+                                            >
                                               {tag.nome}
-                                            </Badge>
+                                            </span>
                                           ))}
                                           {lead.etiquetas.length > 2 && (
                                             <Badge variant="outline" className="text-[10px]">
@@ -878,9 +882,13 @@ export function KanbanBoard({ empresaId }: KanbanBoardProps) {
                         {!!selectedLead.etiquetas?.length && (
                           <div className="mt-3 flex flex-wrap gap-2">
                             {selectedLead.etiquetas.map((tag) => (
-                              <Badge key={tag.id} className="bg-green-600 text-white">
+                              <span
+                                key={tag.id}
+                                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                                style={getLeadTagDisplayStyle(tag.cor)}
+                              >
                                 {tag.nome}
-                              </Badge>
+                              </span>
                             ))}
                           </div>
                         )}

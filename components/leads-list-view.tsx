@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { type Lead, ESTAGIO_LABELS, ESTAGIO_COLORS, updateLeadStage, generateResumoComercial, sendFollowUpWebhook, sendMensagemWebhook, deleteLead, updateLeadBasicInfo } from "@/lib/leads"
 import { getVendedores, type Vendedor } from "@/lib/agendamentos"
-import { type LeadTag } from "@/lib/lead-tags"
+import { getLeadTagColorMeta, getLeadTagDisplayStyle, type LeadTag } from "@/lib/lead-tags"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -746,9 +746,13 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
                         {!!lead.etiquetas?.length && (
                           <div className="mt-2 flex flex-wrap gap-1">
                             {lead.etiquetas.slice(0, 2).map((tag) => (
-                              <Badge key={tag.id} className="bg-green-600 text-white text-[10px]">
+                              <span
+                                key={tag.id}
+                                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold"
+                                style={getLeadTagDisplayStyle(tag.cor)}
+                              >
                                 {tag.nome}
-                              </Badge>
+                              </span>
                             ))}
                             {lead.etiquetas.length > 2 && (
                               <Badge variant="outline" className="text-[10px]">
@@ -887,9 +891,13 @@ export function LeadsListView({ leads, onLeadsUpdate, empresaId, totalLeadsCount
                     {!!selectedLead.etiquetas?.length && (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {selectedLead.etiquetas.map((tag) => (
-                          <Badge key={tag.id} className="bg-green-600 text-white">
+                          <span
+                            key={tag.id}
+                            className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                            style={getLeadTagDisplayStyle(tag.cor)}
+                          >
                             {tag.nome}
-                          </Badge>
+                          </span>
                         ))}
                       </div>
                     )}

@@ -4,9 +4,97 @@ export interface LeadTag {
   id: number
   id_empresa: number
   nome: string
+  cor?: LeadTagColor
   created_at: string
   updated_at: string
 }
+
+export const LEAD_TAG_COLOR_OPTIONS = [
+  {
+    value: "azul_claro",
+    label: "Azul claro",
+    icon: "🔹",
+    badgeClassName: "border-transparent shadow-sm",
+    badgeStyle: { background: "#38bdf8", backgroundColor: "#38bdf8", color: "#082f49", borderColor: "#38bdf8" },
+    buttonStyle: { backgroundColor: "#38bdf8", color: "#082f49", borderColor: "#38bdf8" },
+  },
+  {
+    value: "azul_escuro",
+    label: "Azul escuro",
+    icon: "🔵",
+    badgeClassName: "border-transparent shadow-sm",
+    badgeStyle: { background: "#1d4ed8", backgroundColor: "#1d4ed8", color: "#ffffff", borderColor: "#1d4ed8" },
+    buttonStyle: { backgroundColor: "#1d4ed8", color: "#ffffff", borderColor: "#1d4ed8" },
+  },
+  {
+    value: "verde",
+    label: "Verde",
+    icon: "🟢",
+    badgeClassName: "border-transparent shadow-sm",
+    badgeStyle: { background: "#16a34a", backgroundColor: "#16a34a", color: "#ffffff", borderColor: "#16a34a" },
+    buttonStyle: { backgroundColor: "#16a34a", color: "#ffffff", borderColor: "#16a34a" },
+  },
+  {
+    value: "vermelho",
+    label: "Vermelho",
+    icon: "🔴",
+    badgeClassName: "border-transparent shadow-sm",
+    badgeStyle: { background: "#dc2626", backgroundColor: "#dc2626", color: "#ffffff", borderColor: "#dc2626" },
+    buttonStyle: { backgroundColor: "#dc2626", color: "#ffffff", borderColor: "#dc2626" },
+  },
+  {
+    value: "amarelo",
+    label: "Amarelo",
+    icon: "🟡",
+    badgeClassName: "border-transparent shadow-sm",
+    badgeStyle: { background: "#facc15", backgroundColor: "#facc15", color: "#422006", borderColor: "#facc15" },
+    buttonStyle: { backgroundColor: "#facc15", color: "#422006", borderColor: "#facc15" },
+  },
+  {
+    value: "roxo",
+    label: "Roxo",
+    icon: "🟣",
+    badgeClassName: "border-transparent shadow-sm",
+    badgeStyle: { background: "#9333ea", backgroundColor: "#9333ea", color: "#ffffff", borderColor: "#9333ea" },
+    buttonStyle: { backgroundColor: "#9333ea", color: "#ffffff", borderColor: "#9333ea" },
+  },
+  {
+    value: "marrom",
+    label: "Marrom",
+    icon: "🟤",
+    badgeClassName: "border-transparent shadow-sm",
+    badgeStyle: { background: "#92400e", backgroundColor: "#92400e", color: "#ffffff", borderColor: "#92400e" },
+    buttonStyle: { backgroundColor: "#92400e", color: "#ffffff", borderColor: "#92400e" },
+  },
+  {
+    value: "laranja",
+    label: "Laranja",
+    icon: "🟠",
+    badgeClassName: "border-transparent shadow-sm",
+    badgeStyle: { background: "#ea580c", backgroundColor: "#ea580c", color: "#ffffff", borderColor: "#ea580c" },
+    buttonStyle: { backgroundColor: "#ea580c", color: "#ffffff", borderColor: "#ea580c" },
+  },
+  {
+    value: "cinza",
+    label: "Cinza",
+    icon: "🔘",
+    badgeClassName: "border-transparent shadow-sm",
+    badgeStyle: { background: "#6b7280", backgroundColor: "#6b7280", color: "#ffffff", borderColor: "#6b7280" },
+    buttonStyle: { backgroundColor: "#6b7280", color: "#ffffff", borderColor: "#6b7280" },
+  },
+  {
+    value: "branco",
+    label: "Branco",
+    icon: "⚪",
+    badgeClassName: "border-gray-300 shadow-sm",
+    badgeStyle: { background: "#ffffff", backgroundColor: "#ffffff", color: "#111827", borderColor: "#d1d5db" },
+    buttonStyle: { backgroundColor: "#ffffff", color: "#111827", borderColor: "#d1d5db" },
+  },
+] as const
+
+export type LeadTagColor = (typeof LEAD_TAG_COLOR_OPTIONS)[number]["value"]
+
+const DEFAULT_LEAD_TAG_COLOR: LeadTagColor = "verde"
 
 interface LeadTagAssignment {
   id: number
@@ -31,7 +119,12 @@ function readLocalTags(idEmpresa: number): LeadTag[] {
 
   try {
     const stored = localStorage.getItem(getTagStorageKey(idEmpresa))
-    return stored ? (JSON.parse(stored) as LeadTag[]) : []
+    return stored
+      ? (JSON.parse(stored) as LeadTag[]).map((tag) => ({
+          ...tag,
+          cor: normalizeTagColor(tag.cor),
+        }))
+      : []
   } catch (error) {
     console.error("Erro ao ler etiquetas locais:", error)
     return []
@@ -40,7 +133,15 @@ function readLocalTags(idEmpresa: number): LeadTag[] {
 
 function writeLocalTags(idEmpresa: number, tags: LeadTag[]) {
   if (typeof window === "undefined") return
-  localStorage.setItem(getTagStorageKey(idEmpresa), JSON.stringify(tags))
+  localStorage.setItem(
+    getTagStorageKey(idEmpresa),
+    JSON.stringify(
+      tags.map((tag) => ({
+        ...tag,
+        cor: normalizeTagColor(tag.cor),
+      })),
+    ),
+  )
 }
 
 function readLocalAssignments(idEmpresa: number): LeadTagAssignment[] {
@@ -69,6 +170,31 @@ function normalizeTagName(nome: string) {
   return nome.trim().replace(/\s+/g, " ")
 }
 
+function normalizeTagColor(cor?: string | null): LeadTagColor {
+  const color = LEAD_TAG_COLOR_OPTIONS.find((option) => option.value === cor)?.value
+  return color || DEFAULT_LEAD_TAG_COLOR
+}
+
+export function getLeadTagColorMeta(cor?: string | null) {
+  const normalizedColor = normalizeTagColor(cor)
+  return LEAD_TAG_COLOR_OPTIONS.find((option) => option.value === normalizedColor) || LEAD_TAG_COLOR_OPTIONS[2]
+}
+
+export function getLeadTagDisplayStyle(cor?: string | null) {
+  const colorMeta = getLeadTagColorMeta(cor)
+
+  if (colorMeta.value === "branco") {
+    return {
+      ...colorMeta.badgeStyle,
+      color: "#000000",
+      WebkitTextFillColor: "#000000",
+      borderColor: "#d1d5db",
+    }
+  }
+
+  return colorMeta.badgeStyle
+}
+
 function buildLeadTagsMap(tags: LeadTag[], assignments: LeadTagAssignment[]): LeadTagsMap {
   const tagById = new Map<number, LeadTag>(tags.map((tag) => [tag.id, tag]))
 
@@ -93,7 +219,10 @@ async function getRemoteTags(idEmpresa: number): Promise<LeadTag[]> {
     throw error
   }
 
-  return (data as LeadTag[]) || []
+  return ((data as LeadTag[]) || []).map((tag) => ({
+    ...tag,
+    cor: normalizeTagColor(tag.cor),
+  }))
 }
 
 async function getRemoteAssignments(idEmpresa: number): Promise<LeadTagAssignment[]> {
@@ -134,8 +263,9 @@ export async function getLeadTagsMap(idEmpresa: number): Promise<LeadTagsMap> {
   }
 }
 
-export async function createLeadTag(idEmpresa: number, nome: string): Promise<LeadTag | null> {
+export async function createLeadTag(idEmpresa: number, nome: string, cor: LeadTagColor = DEFAULT_LEAD_TAG_COLOR): Promise<LeadTag | null> {
   const normalizedName = normalizeTagName(nome)
+  const normalizedColor = normalizeTagColor(cor)
   if (!normalizedName) return null
 
   try {
@@ -150,6 +280,7 @@ export async function createLeadTag(idEmpresa: number, nome: string): Promise<Le
       .insert({
         id_empresa: idEmpresa,
         nome: normalizedName,
+        cor: normalizedColor,
       })
       .select("*")
       .single()
@@ -173,6 +304,7 @@ export async function createLeadTag(idEmpresa: number, nome: string): Promise<Le
       id: Date.now(),
       id_empresa: idEmpresa,
       nome: normalizedName,
+      cor: normalizedColor,
       created_at: now,
       updated_at: now,
     }
@@ -182,8 +314,14 @@ export async function createLeadTag(idEmpresa: number, nome: string): Promise<Le
   }
 }
 
-export async function updateLeadTag(tagId: number, idEmpresa: number, nome: string): Promise<boolean> {
+export async function updateLeadTag(
+  tagId: number,
+  idEmpresa: number,
+  nome: string,
+  cor: LeadTagColor = DEFAULT_LEAD_TAG_COLOR,
+): Promise<boolean> {
   const normalizedName = normalizeTagName(nome)
+  const normalizedColor = normalizeTagColor(cor)
   if (!normalizedName) return false
 
   try {
@@ -192,6 +330,7 @@ export async function updateLeadTag(tagId: number, idEmpresa: number, nome: stri
       .from("lead_tags")
       .update({
         nome: normalizedName,
+        cor: normalizedColor,
         updated_at: new Date().toISOString(),
       })
       .eq("id", tagId)
@@ -208,7 +347,9 @@ export async function updateLeadTag(tagId: number, idEmpresa: number, nome: stri
     }
 
     const tags = readLocalTags(idEmpresa).map((tag) =>
-      tag.id === tagId ? { ...tag, nome: normalizedName, updated_at: new Date().toISOString() } : tag,
+      tag.id === tagId
+        ? { ...tag, nome: normalizedName, cor: normalizedColor, updated_at: new Date().toISOString() }
+        : { ...tag, cor: normalizeTagColor(tag.cor) },
     )
     writeLocalTags(idEmpresa, tags.sort((a, b) => a.nome.localeCompare(b.nome)))
     return true

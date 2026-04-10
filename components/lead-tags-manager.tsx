@@ -16,7 +16,11 @@ import { Search, Tags, Plus, X, Loader2 } from "lucide-react"
 import {
   assignTagToLead,
   createLeadTag,
+  getLeadTagColorMeta,
+  getLeadTagDisplayStyle,
   getLeadTags,
+  LEAD_TAG_COLOR_OPTIONS,
+  type LeadTagColor,
   removeTagFromLead,
   type LeadTag,
 } from "@/lib/lead-tags"
@@ -34,6 +38,7 @@ export function LeadTagsManager({ leadId, empresaId, selectedTags, onTagsChange 
   const [search, setSearch] = useState("")
   const [creating, setCreating] = useState(false)
   const [newTagName, setNewTagName] = useState("")
+  const [newTagColor, setNewTagColor] = useState<LeadTagColor>("verde")
 
   useEffect(() => {
     void loadTags()
@@ -70,10 +75,11 @@ export function LeadTagsManager({ leadId, empresaId, selectedTags, onTagsChange 
   }
 
   const handleCreateTag = async () => {
-    const createdTag = await createLeadTag(empresaId, newTagName)
+    const createdTag = await createLeadTag(empresaId, newTagName, newTagColor)
     if (!createdTag) return
 
     setNewTagName("")
+    setNewTagColor("verde")
     setCreating(false)
     await loadTags()
 
@@ -130,6 +136,27 @@ export function LeadTagsManager({ leadId, empresaId, selectedTags, onTagsChange 
                       }
                     }}
                   />
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-gray-500">Escolha uma cor</p>
+                    <div className="flex flex-wrap gap-2">
+                      {LEAD_TAG_COLOR_OPTIONS.map((colorOption) => {
+                        const isSelected = newTagColor === colorOption.value
+
+                        return (
+                          <button
+                            key={colorOption.value}
+                            type="button"
+                            onClick={() => setNewTagColor(colorOption.value)}
+                            title={colorOption.label}
+                            aria-label={colorOption.label}
+                            className={`flex min-w-8 items-center justify-center rounded-full bg-transparent px-1 py-1 text-base font-semibold transition ${isSelected ? "scale-110 ring-2 ring-green-500 ring-offset-1 ring-offset-white" : "opacity-90 hover:opacity-100"}`}
+                          >
+                            {colorOption.icon}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
@@ -139,13 +166,28 @@ export function LeadTagsManager({ leadId, empresaId, selectedTags, onTagsChange 
                     >
                       Criar
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => setCreating(false)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setCreating(false)
+                        setNewTagName("")
+                        setNewTagColor("verde")
+                      }}
+                    >
                       Cancelar
                     </Button>
                   </div>
                 </div>
               ) : (
-                <DropdownMenuItem onClick={() => setCreating(true)} className="cursor-pointer font-medium text-green-700">
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    setCreating(true)
+                    setNewTagColor("verde")
+                  }}
+                  className="cursor-pointer font-medium text-green-700"
+                >
                   <Plus className="h-4 w-4" />
                   + Criar nova etiqueta
                 </DropdownMenuItem>
@@ -166,6 +208,7 @@ export function LeadTagsManager({ leadId, empresaId, selectedTags, onTagsChange 
                 ) : (
                   filteredTags.map((tag) => {
                     const isSelected = selectedTagIds.has(tag.id)
+                    const colorMeta = getLeadTagColorMeta(tag.cor)
 
                     return (
                       <DropdownMenuItem
@@ -174,7 +217,10 @@ export function LeadTagsManager({ leadId, empresaId, selectedTags, onTagsChange 
                         className="flex cursor-pointer items-center justify-between gap-3 py-2"
                       >
                         <span className="truncate">{tag.nome}</span>
-                        <Badge className={isSelected ? "bg-green-600 text-white" : "bg-gray-100 text-gray-700"}>
+                        <Badge
+                          className={isSelected ? colorMeta.badgeClassName : "bg-gray-100 text-gray-700"}
+                          style={isSelected ? colorMeta.badgeStyle : undefined}
+                        >
                           {isSelected ? "Selecionada" : "Adicionar"}
                         </Badge>
                       </DropdownMenuItem>
@@ -192,12 +238,16 @@ export function LeadTagsManager({ leadId, empresaId, selectedTags, onTagsChange 
           <span className="text-sm italic text-gray-500">Nenhuma etiqueta vinculada a este lead.</span>
         ) : (
           selectedTags.map((tag) => (
-            <Badge key={tag.id} className="flex items-center gap-1 bg-green-600 text-white">
+            <span
+              key={tag.id}
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+              style={getLeadTagDisplayStyle(tag.cor)}
+            >
               {tag.nome}
               <button type="button" onClick={() => void handleToggleTag(tag)} aria-label={`Remover ${tag.nome}`}>
                 <X className="h-3 w-3" />
               </button>
-            </Badge>
+            </span>
           ))
         )}
       </div>
