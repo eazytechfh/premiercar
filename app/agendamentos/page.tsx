@@ -48,8 +48,8 @@ export default function Agendamentos() {
           .bg-white,
           .bg-gray-50,
           .bg-gray-100,
-          [class*="bg-muted"],
-          [class*="bg-card"] {
+          .bg-muted,
+          .bg-card {
             background-color: #000 !important;
             border: 1px solid #222 !important;
           }

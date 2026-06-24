@@ -98,7 +98,7 @@ export function EditableEmailField({ leadId, currentEmail, onEmailUpdate, classN
             variant="outline"
             onClick={handleCancel}
             disabled={loading}
-            className="h-7 w-7 p-0 border-gray-300 hover:bg-gray-50 bg-transparent"
+            className="h-7 w-7 p-0 border-gray-600 bg-transparent text-white hover:bg-[#111827]"
           >
             <X className="h-3 w-3" />
           </Button>
@@ -109,14 +109,14 @@ export function EditableEmailField({ leadId, currentEmail, onEmailUpdate, classN
 
   return (
     <div
-      className={`flex items-center justify-between group cursor-pointer hover:bg-green-50 rounded p-2 transition-colors border border-green-200 ${className}`}
+      className={`flex items-center justify-between group cursor-pointer rounded p-2 transition-colors border border-green-400 bg-black hover:bg-[#052e16] ${className}`}
       onClick={handleStartEdit}
     >
       <div className="flex items-center gap-2">
         <Mail className="h-4 w-4 text-green-600" />
         <div>
-          <span className="text-sm font-medium text-green-800">E-mail</span>
-          <div className="text-sm text-gray-700">
+          <span className="text-sm font-medium text-white">E-mail</span>
+          <div className="text-sm text-white">
             {currentEmail || <span className="text-gray-400 italic">Clique para adicionar e-mail</span>}
           </div>
         </div>

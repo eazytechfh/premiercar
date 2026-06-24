@@ -89,7 +89,7 @@ export function EditableValueField({ leadId, currentValue, onValueUpdate, classN
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyPress}
             onBlur={(e) => setEditValue(formatInputValue(e.target.value))}
-            className="text-xs h-7 pl-6 pr-1 border-green-300 focus:border-green-500"
+            className="text-xs h-7 pl-6 pr-1 border-green-500 bg-black text-white focus:border-green-400"
             placeholder="R$ 0,00"
             autoFocus
             disabled={loading}
@@ -110,7 +110,7 @@ export function EditableValueField({ leadId, currentValue, onValueUpdate, classN
             variant="outline"
             onClick={handleCancel}
             disabled={loading}
-            className="h-7 w-7 p-0 border-gray-300 hover:bg-gray-50 bg-transparent"
+            className="h-7 w-7 p-0 border-gray-600 bg-transparent text-white hover:bg-[#111827]"
           >
             <X className="h-3 w-3" />
           </Button>
@@ -121,12 +121,12 @@ export function EditableValueField({ leadId, currentValue, onValueUpdate, classN
 
   return (
     <div
-      className={`flex items-center justify-between group cursor-pointer hover:bg-gray-50 rounded p-1 transition-colors ${className}`}
+      className={`flex items-center justify-between group cursor-pointer rounded p-1 transition-colors hover:bg-[#052e16] ${className}`}
       onClick={handleStartEdit}
     >
       <div className="flex items-center gap-1">
         <DollarSign className="h-3 w-3 text-green-600" />
-        <span className="text-xs font-semibold text-green-700">{formatCurrency(currentValue)}</span>
+        <span className="text-xs font-semibold text-white">{formatCurrency(currentValue)}</span>
       </div>
       <Edit3 className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
     </div>

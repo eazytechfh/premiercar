@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth"
 import { SidebarNav } from "@/components/sidebar-nav"
@@ -9,12 +9,15 @@ import { DashboardCharts } from "@/components/dashboard-charts"
 
 export default function Dashboard() {
   const router = useRouter()
+  const [lastUpdateLabel, setLastUpdateLabel] = useState("")
 
   useEffect(() => {
     const user = getCurrentUser()
     if (!user) {
       router.push("/")
     }
+
+    setLastUpdateLabel(new Date().toLocaleString("pt-BR"))
   }, [router])
 
   return (
@@ -66,7 +69,7 @@ export default function Dashboard() {
           <div className="container mx-auto px-6">
             <div className="flex items-center justify-between text-sm text-green-300">
               <p>© 2025 Altuza Digital - Plataforma de Leads</p>
-              <p>Última atualização: {new Date().toLocaleString("pt-BR")}</p>
+              <p>Última atualização: {lastUpdateLabel || "Carregando..."}</p>
             </div>
           </div>
         </footer>

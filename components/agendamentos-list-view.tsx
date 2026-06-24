@@ -170,13 +170,13 @@ export function AgendamentosListView() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-semibold text-gray-900">{agendamento.nome_lead}</h3>
+                          <h3 className="font-semibold text-white">{agendamento.nome_lead}</h3>
                           <Badge className={ESTAGIO_AGENDAMENTO_COLORS[agendamento.status as keyof typeof ESTAGIO_AGENDAMENTO_COLORS]}>
                             {ESTAGIO_AGENDAMENTO_LABELS[agendamento.status as keyof typeof ESTAGIO_AGENDAMENTO_LABELS]}
                           </Badge>
                         </div>
 
-                        <div className="text-sm text-gray-600 space-y-1">
+                        <div className="text-sm text-gray-300 space-y-1">
                           {agendamento.telefone && (
                             <div className="flex items-center gap-2">
                               <Phone className="h-4 w-4" />
@@ -184,7 +184,7 @@ export function AgendamentosListView() {
                             </div>
                           )}
                           {agendamento.descricao && (
-                            <div className="text-gray-700">Veículo: {agendamento.descricao}</div>
+                            <div className="text-gray-300">Veículo: {agendamento.descricao}</div>
                           )}
                           {agendamento.data_agendamento && (
                             <div className="flex items-center gap-2">
@@ -232,7 +232,7 @@ export function AgendamentosListView() {
           {selectedAgendamento && (
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Modelo do Veículo</label>
+                <label className="text-sm font-medium text-white">Modelo do Veículo</label>
                 <Input
                   placeholder="Ex: Honda Civic"
                   value={formData.modelo_veiculo}
@@ -242,7 +242,7 @@ export function AgendamentosListView() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Data</label>
+                <label className="text-sm font-medium text-white">Data</label>
                 <Input
                   type="date"
                   value={formData.data_agendamento}
@@ -252,7 +252,7 @@ export function AgendamentosListView() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Vendedor</label>
+                <label className="text-sm font-medium text-white">Vendedor</label>
                 <Select
                   value={formData.id_vendedor}
                   onValueChange={(value) => setFormData({ ...formData, id_vendedor: value })}
@@ -271,7 +271,7 @@ export function AgendamentosListView() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Observações</label>
+                <label className="text-sm font-medium text-white">Observações</label>
                 <Input
                   placeholder="Adicione observações"
                   value={formData.observacoes}

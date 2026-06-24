@@ -89,7 +89,7 @@ export function EditableDataNascimentoField({
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyPress}
-            className="text-xs h-7 pl-6 pr-1 border-green-300 focus:border-green-500"
+            className="text-xs h-7 pl-6 pr-1 border-green-500 bg-black text-white focus:border-green-400"
             autoFocus
             disabled={loading}
           />
@@ -108,7 +108,7 @@ export function EditableDataNascimentoField({
             variant="outline"
             onClick={handleCancel}
             disabled={loading}
-            className="h-7 w-7 p-0 border-gray-300 hover:bg-gray-50 bg-transparent"
+            className="h-7 w-7 p-0 border-gray-600 bg-transparent text-white hover:bg-[#111827]"
           >
             <X className="h-3 w-3" />
           </Button>
@@ -119,14 +119,14 @@ export function EditableDataNascimentoField({
 
   return (
     <div
-      className={`flex items-center justify-between group cursor-pointer hover:bg-green-50 rounded p-2 transition-colors border border-green-200 ${className}`}
+      className={`flex items-center justify-between group cursor-pointer rounded p-2 transition-colors border border-green-400 bg-black hover:bg-[#052e16] ${className}`}
       onClick={handleStartEdit}
     >
       <div className="flex items-center gap-2">
         <Calendar className="h-4 w-4 text-green-600" />
         <div>
-          <span className="text-sm font-medium text-green-800">Data de Nascimento</span>
-          <div className="text-sm text-gray-700">
+          <span className="text-sm font-medium text-white">Data de Nascimento</span>
+          <div className="text-sm text-white">
             {currentDataNascimento ? (
               formatDatePtBr(currentDataNascimento)
             ) : (

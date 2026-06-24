@@ -106,6 +106,8 @@ interface LeadTagAssignment {
 
 type LeadTagsMap = Record<number, LeadTag[]>
 
+const REMOTE_LEAD_TAGS_ENABLED = false
+
 function getTagStorageKey(idEmpresa: number) {
   return `premiercar:lead-tags:${idEmpresa}`
 }
@@ -162,8 +164,25 @@ function writeLocalAssignments(idEmpresa: number, assignments: LeadTagAssignment
 }
 
 function shouldUseLocalFallback(error: unknown) {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
-  return message.includes("does not exist") || message.includes("relation") || message.includes("schema cache")
+  const payload = error as { code?: string; message?: string; details?: string; hint?: string }
+  const message = [
+    payload?.code,
+    payload?.message,
+    payload?.details,
+    payload?.hint,
+    error instanceof Error ? error.message : String(error),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+
+  return (
+    message.includes("pgrst205") ||
+    message.includes("does not exist") ||
+    message.includes("could not find the table") ||
+    message.includes("relation") ||
+    message.includes("schema cache")
+  )
 }
 
 function normalizeTagName(nome: string) {
@@ -208,6 +227,10 @@ function buildLeadTagsMap(tags: LeadTag[], assignments: LeadTagAssignment[]): Le
 }
 
 async function getRemoteTags(idEmpresa: number): Promise<LeadTag[]> {
+  if (!REMOTE_LEAD_TAGS_ENABLED) {
+    return readLocalTags(idEmpresa)
+  }
+
   const supabase = createClient()
   const { data, error } = await supabase
     .from("lead_tags")
@@ -226,6 +249,10 @@ async function getRemoteTags(idEmpresa: number): Promise<LeadTag[]> {
 }
 
 async function getRemoteAssignments(idEmpresa: number): Promise<LeadTagAssignment[]> {
+  if (!REMOTE_LEAD_TAGS_ENABLED) {
+    return readLocalAssignments(idEmpresa)
+  }
+
   const supabase = createClient()
   const { data, error } = await supabase
     .from("lead_tag_assignments")

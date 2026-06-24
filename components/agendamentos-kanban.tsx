@@ -281,7 +281,7 @@ export function AgendamentosKanban() {
       {/* Status Message */}
       {statusMessage && (
         <Alert
-          className={`${statusMessage.type === "success" ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}
+          className={`${statusMessage.type === "success" ? "border-green-500 bg-black" : "border-red-500 bg-black"}`}
         >
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className={statusMessage.type === "success" ? "text-green-700" : "text-red-700"}>
@@ -300,14 +300,14 @@ export function AgendamentosKanban() {
                   <Card
                     className={`w-80 min-h-[500px] flex-shrink-0 transition-all duration-200 ${
                       snapshot.isDraggingOver
-                        ? "bg-gradient-to-b from-blue-50 to-blue-100 border-blue-300 shadow-lg"
+                        ? "border-[#22C55E] bg-[#020617] shadow-[0_0_0_1px_rgba(34,197,94,0.45),0_18px_45px_rgba(34,197,94,0.18)] ring-1 ring-[#22C55E]/60"
                         : "hover:shadow-md"
                     }`}
                   >
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm font-medium flex items-center justify-between">
                         <span className="flex items-center gap-2">
-                          {snapshot.isDraggingOver && <Move className="h-4 w-4 text-blue-500 animate-pulse" />}
+                          {snapshot.isDraggingOver && <Move className="h-4 w-4 text-[#22C55E] animate-pulse" />}
                           {ESTAGIO_AGENDAMENTO_LABELS[stage as keyof typeof ESTAGIO_AGENDAMENTO_LABELS]}
                         </span>
                         <Badge variant="secondary" className="text-xs">
@@ -323,18 +323,18 @@ export function AgendamentosKanban() {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className={`cursor-grab active:cursor-grabbing transition-all duration-200 ${
+                              className={`cursor-grab active:cursor-grabbing select-none transition-shadow duration-150 ${
                                 snapshot.isDragging
-                                  ? "shadow-2xl rotate-3 scale-105 bg-white border-blue-300 z-50"
+                                  ? "shadow-2xl bg-black border-[#22C55E] ring-1 ring-[#22C55E]/60 z-50"
                                   : "hover:shadow-md hover:-translate-y-1"
                               } ${movingAgendamento === agendamento.id ? "opacity-50" : ""}`}
                               onClick={() => handleOpenAgendamento(agendamento)}
                             >
                               <CardContent className="p-3 space-y-2">
-                                <div className="text-sm font-semibold text-gray-900 truncate">
+                                <div className="text-sm font-semibold text-white truncate">
                                   {agendamento.titulo || agendamento.nome_lead || "Sem título"}
                                 </div>
-                                <div className="space-y-1 text-xs text-gray-600">
+                                <div className="space-y-1 text-xs text-gray-300">
                                   {agendamento.telefone && (
                                     <div className="flex items-center gap-1">
                                       <Phone className="h-3 w-3" />
@@ -385,7 +385,7 @@ export function AgendamentosKanban() {
           {selectedAgendamento && (
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Título</label>
+                <label className="text-sm font-medium text-white">Título</label>
                 <Input
                   placeholder="Ex: Visita ao cliente"
                   value={formData.titulo}
@@ -395,7 +395,7 @@ export function AgendamentosKanban() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Data e Hora</label>
+                <label className="text-sm font-medium text-white">Data e Hora</label>
                 <Input
                   type="datetime-local"
                   value={formData.data_agendamento}
@@ -405,7 +405,7 @@ export function AgendamentosKanban() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Local</label>
+                <label className="text-sm font-medium text-white">Local</label>
                 <Input
                   placeholder="Ex: Loja Centro"
                   value={formData.local}
@@ -415,7 +415,7 @@ export function AgendamentosKanban() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Vendedor</label>
+                <label className="text-sm font-medium text-white">Vendedor</label>
                 <Select
                   value={formData.vendedor_id}
                   onValueChange={(value) => setFormData({ ...formData, vendedor_id: value })}
@@ -434,7 +434,7 @@ export function AgendamentosKanban() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Descrição</label>
+                <label className="text-sm font-medium text-white">Descrição</label>
                 <Input
                   placeholder="Adicione uma descrição"
                   value={formData.descricao}

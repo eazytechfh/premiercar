@@ -87,8 +87,8 @@ export function EditableCpfField({ leadId, currentCpf, onCpfUpdate, className = 
             onKeyDown={handleKeyPress}
             className={`text-xs h-7 pl-6 pr-1 ${
               editValue && !isValidCpf(editValue)
-                ? "border-red-300 focus:border-red-500"
-                : "border-green-300 focus:border-green-500"
+                ? "border-red-500 bg-black text-white focus:border-red-400"
+                : "border-green-500 bg-black text-white focus:border-green-400"
             }`}
             placeholder="000.000.000-00"
             autoFocus
@@ -109,7 +109,7 @@ export function EditableCpfField({ leadId, currentCpf, onCpfUpdate, className = 
             variant="outline"
             onClick={handleCancel}
             disabled={loading}
-            className="h-7 w-7 p-0 border-gray-300 hover:bg-gray-50 bg-transparent"
+            className="h-7 w-7 p-0 border-gray-600 bg-transparent text-white hover:bg-[#111827]"
           >
             <X className="h-3 w-3" />
           </Button>
@@ -120,14 +120,14 @@ export function EditableCpfField({ leadId, currentCpf, onCpfUpdate, className = 
 
   return (
     <div
-      className={`flex items-center justify-between group cursor-pointer hover:bg-green-50 rounded p-2 transition-colors border border-green-200 ${className}`}
+      className={`flex items-center justify-between group cursor-pointer rounded p-2 transition-colors border border-green-400 bg-black hover:bg-[#052e16] ${className}`}
       onClick={handleStartEdit}
     >
       <div className="flex items-center gap-2">
         <CreditCard className="h-4 w-4 text-green-600" />
         <div>
-          <span className="text-sm font-medium text-green-800">CPF</span>
-          <div className="text-sm text-gray-700">
+          <span className="text-sm font-medium text-white">CPF</span>
+          <div className="text-sm text-white">
             {currentCpf || <span className="text-gray-400 italic">Clique para adicionar CPF</span>}
           </div>
         </div>

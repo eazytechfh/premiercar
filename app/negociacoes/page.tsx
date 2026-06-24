@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@/utils/supabase/client"
 import { getCurrentUser } from "@/lib/auth"
 import { SidebarNav } from "@/components/sidebar-nav"
 import { KanbanBoard } from "@/components/kanban-board"
@@ -10,11 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export default function Negociacoes() {
   const router = useRouter()
@@ -52,6 +47,8 @@ export default function Negociacoes() {
   }, [router])
 
   async function carregarVendedores() {
+    const supabase = createClient()
+
     const { data, error } = await supabase
       .from("VENDEDORES")
       .select("ID_VENDEDOR, NOME")
@@ -92,6 +89,8 @@ export default function Negociacoes() {
 
   async function salvarLead() {
     try {
+      const supabase = createClient()
+
       if (!empresaId) {
         alert("Empresa não identificada.")
         return
@@ -159,22 +158,12 @@ export default function Negociacoes() {
           section,
           .container,
           .kanban-column,
-          .kanban-card,
-          .shadow-sm,
-          .rounded-lg,
-          [class*="bg-white"],
-          [class*="bg-gray-"],
-          [class*="card"],
-          [class*="popover"],
-          [class*="surface"],
-          [class*="muted"],
-          .border,
-          .flex-1 {
+          .kanban-card {
             background-color: #000 !important;
           }
 
           h1, h2, h3, h4, h5, h6,
-          p, span, label, div,
+          p, span, label,
           .text-gray-600,
           .text-gray-900,
           .text-muted-foreground {
@@ -231,12 +220,6 @@ export default function Negociacoes() {
             stroke: #22C55E !important;
           }
 
-          [class*="CardHeader"] button,
-          [class*="card-header"] button {
-            display: inline-flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-          }
         `}</style>
 
         <main className="flex-1 overflow-y-auto bg-black">

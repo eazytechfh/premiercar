@@ -219,7 +219,7 @@ export function AddMemberForm({ isOpen, onClose, onSuccess, currentUser }: AddMe
           </div>
 
           {error && (
-            <Alert className="border-red-200 bg-red-50">
+            <Alert className="border-red-500 bg-black">
               <AlertDescription className="text-red-700">{error}</AlertDescription>
             </Alert>
           )}

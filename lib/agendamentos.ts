@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/client"
+﻿import { createClient } from "@/utils/supabase/client"
 
 export interface Agendamento {
   id: string
@@ -101,7 +101,7 @@ export async function getAgendamentos(idEmpresa: number): Promise<Agendamento[]>
     }
   }
 
-  // Mapear os dados com o nome do vendedor e informações do lead
+  // Mapear os dados com o nome do vendedor e informaÃ§Ãµes do lead
   return agendamentos.map((item: any) => {
     const lead = item.lead_id ? leadsMap.get(item.lead_id.toString()) : null
     return {
@@ -269,9 +269,9 @@ export async function getVendedores(idEmpresa: string | number): Promise<Vendedo
 
   const vendedoresTabela = (data as Vendedor[]) || []
 
-  // Fallback: vendedores cadastrados como usuários do sistema
+  // Fallback: vendedores cadastrados como usuÃ¡rios do sistema
   const { data: vendedoresUsuarios, error: vendedoresUsuariosError } = await supabase
-    .from("AUTORIZAÃ‡ÃƒO")
+    .from("AUTORIZAÇÃO")
     .select("id, nome_usuario")
     .eq("id_empresa", empresaId)
     .eq("cargo", "vendedor")
@@ -279,7 +279,7 @@ export async function getVendedores(idEmpresa: string | number): Promise<Vendedo
     .order("nome_usuario", { ascending: true })
 
   if (vendedoresUsuariosError) {
-    console.error("[v0] Error fetching vendedores from AUTORIZAÇÃO:", vendedoresUsuariosError.message)
+    console.error("[v0] Error fetching vendedores from AUTORIZAÃ‡ÃƒO:", vendedoresUsuariosError.message)
     return vendedoresTabela
   }
 
@@ -298,3 +298,4 @@ export async function getVendedores(idEmpresa: string | number): Promise<Vendedo
 
   return Array.from(mergedByNome.values()).sort((a, b) => a.nome.localeCompare(b.nome))
 }
+

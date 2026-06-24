@@ -34,6 +34,7 @@ export const ESTAGIO_LABELS = {
 }
 
 export const ESTAGIO_COLORS = {
+  novos_leads: "bg-green-500 text-black",
   oportunidade: "bg-blue-100 text-blue-800",
   em_qualificacao: "bg-yellow-100 text-yellow-800",
   em_negociacao: "bg-green-100 text-green-800",
@@ -46,6 +47,7 @@ export const ESTAGIO_COLORS = {
 
 // Lista dos estágios válidos para validação
 export const VALID_ESTAGIOS = [
+  "novos_leads",
   "oportunidade",
   "em_qualificacao",
   "em_negociacao",
@@ -55,6 +57,69 @@ export const VALID_ESTAGIOS = [
   "pesquisa_atendimento",
   "follow_up",
 ]
+
+export interface LeadsStagePage {
+  stage: string
+  leads: Lead[]
+  count: number
+}
+
+export interface LeadPageOptions {
+  vendedor?: string
+}
+
+const LEADS_LIST_SELECT =
+  "id,id_empresa,nome:nome_lead,telefone,email,cpf,data_nascimento,origem,vendedor,veiculo_interesse,resumo_qualificacao,estagio_lead,resumo_comercial,valor,observacao_vendedor,created_at,updated_at"
+
+export async function getLeadsStagePage(
+  idEmpresa: number,
+  stage: string,
+  from: number,
+  to: number,
+  options: LeadPageOptions = {},
+): Promise<LeadsStagePage> {
+  const supabase = createClient()
+
+  let query = supabase
+    .from("BASE_DE_LEADS")
+    .select(LEADS_LIST_SELECT, { count: "exact" })
+    .eq("id_empresa", idEmpresa)
+    .eq("estagio_lead", stage)
+    .order("created_at", { ascending: false })
+    .range(from, to)
+
+  if (options.vendedor) {
+    query = query.eq("vendedor", options.vendedor)
+  }
+
+  const { data, error, count } = await query
+
+  if (error) {
+    console.error("Error fetching leads stage page:", error)
+    return { stage, leads: [], count: 0 }
+  }
+
+  const leadTagsMap = await getLeadTagsMap(idEmpresa)
+  const leads = ((data as Lead[]) || []).map((lead) => ({
+    ...lead,
+    etiquetas: leadTagsMap[lead.id] || [],
+  }))
+
+  return {
+    stage,
+    leads,
+    count: count ?? leads.length,
+  }
+}
+
+export async function getLeadsStagePages(
+  idEmpresa: number,
+  stages: string[],
+  perStage: number,
+  options: LeadPageOptions = {},
+): Promise<LeadsStagePage[]> {
+  return Promise.all(stages.map((stage) => getLeadsStagePage(idEmpresa, stage, 0, perStage - 1, options)))
+}
 
 export async function getLeads(idEmpresa: number): Promise<Lead[]> {
   const supabase = createClient()

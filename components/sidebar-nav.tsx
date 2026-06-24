@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { getCurrentUser, signOut, CARGO_LABELS } from "@/lib/auth"
+import { getCurrentUser, signOut, CARGO_LABELS, type User } from "@/lib/auth"
 import { LayoutDashboard, Settings, LogOut, Menu, X, Shield, Car, Calendar, MessageCircle, Users, Handshake } from "lucide-react"
 import Image from "next/image"
 
@@ -14,19 +14,22 @@ const allNavigation = [
   { name: "Negociações", href: "/negociacoes", icon: Users, vendorAccess: true },
   { name: "Agendamentos", href: "/agendamentos", icon: Calendar, vendorAccess: true },
   { name: "Estoque", href: "/estoque", icon: Car, vendorAccess: false },
-  { name: "Configurações", href: "/configuracoes", icon: Settings, vendorAccess: false },
+  { name: "Configurações", href: "/configuracoes", icon: Settings, vendorAccess: true },
 ]
 
 export function SidebarNav() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
   const pathname = usePathname()
   const router = useRouter()
-  const user = getCurrentUser()
+
+  useEffect(() => {
+    setUser(getCurrentUser())
+  }, [])
 
   // Filtrar navegação baseado no cargo do usuário
-  const navigation = user?.cargo === "vendedor" 
-    ? allNavigation.filter((item) => item.vendorAccess)
-    : allNavigation
+  const navigation =
+    user?.cargo === "administrador" ? allNavigation : allNavigation.filter((item) => item.vendorAccess)
 
   const handleSignOut = () => {
     signOut()
@@ -81,7 +84,7 @@ export function SidebarNav() {
                 <Badge className="text-xs bg-[#22C55E] text-black hover:bg-[#16A34A]">
                   <div className="flex items-center gap-1">
                     <Shield className="h-3 w-3" />
-                    {CARGO_LABELS[user.cargo]}
+                    {CARGO_LABELS[user.cargo as keyof typeof CARGO_LABELS] || user.cargo}
                   </div>
                 </Badge>
               </div>

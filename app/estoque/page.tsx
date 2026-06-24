@@ -44,9 +44,9 @@ export default function Estoque() {
           .bg-white,
           .bg-gray-50,
           .bg-gray-100,
-          [class*="bg-muted"],
-          [class*="bg-card"],
-          [class*="surface"] {
+          .bg-muted,
+          .bg-card,
+          .surface {
             background-color: #000 !important;
             border: 1px solid #222 !important;
           }

@@ -1,5 +1,6 @@
 "use client"
 
+import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { getCurrentUser, type User } from "@/lib/auth"
@@ -14,7 +15,7 @@ import { User as UserIcon, Building, CreditCard, Users, Shield, Lock } from "luc
 import { EditProfileForm } from "@/components/edit-profile-form"
 import { AddMemberForm } from "@/components/add-member-form"
 import { MembersManagement } from "@/components/members-management"
-import { getCompanyMembers, STATUS_LABELS, CARGO_LABELS, canManageMembers } from "@/lib/auth"
+import { getCompanyMembers, STATUS_LABELS, CARGO_LABELS, canManageMembers, updateCurrentUserPassword } from "@/lib/auth"
 import { LeadTagsSettingsCard } from "@/components/lead-tags-settings-card"
 
 export default function Configuracoes() {
@@ -24,6 +25,13 @@ export default function Configuracoes() {
   const [companyMembers, setCompanyMembers] = useState<User[]>([])
   const [isAddingMember, setIsAddingMember] = useState(false)
   const [loadingMembers, setLoadingMembers] = useState(true)
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
+  const [savingPassword, setSavingPassword] = useState(false)
+  const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   useEffect(() => {
     const currentUser = getCurrentUser()
@@ -31,7 +39,11 @@ export default function Configuracoes() {
       router.push("/")
     } else {
       setUser(currentUser)
-      loadCompanyMembers(currentUser.id_empresa)
+      if (canManageMembers(currentUser)) {
+        loadCompanyMembers(currentUser.id_empresa)
+      } else {
+        setLoadingMembers(false)
+      }
     }
   }, [router])
 
@@ -56,6 +68,43 @@ export default function Configuracoes() {
     }
   }
 
+  const handlePasswordChange = (field: keyof typeof passwordForm, value: string) => {
+    setPasswordForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handlePasswordSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+
+    if (!user) return
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordMessage({ type: "error", text: "A confirmacao da senha nao confere." })
+      return
+    }
+
+    setSavingPassword(true)
+    setPasswordMessage(null)
+
+    try {
+      const result = await updateCurrentUserPassword(user, passwordForm.currentPassword, passwordForm.newPassword)
+
+      if (result.success) {
+        setPasswordForm({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        })
+        setPasswordMessage({ type: "success", text: "Senha atualizada com sucesso." })
+      } else {
+        setPasswordMessage({ type: "error", text: result.error || "Erro ao atualizar senha." })
+      }
+    } catch (error) {
+      setPasswordMessage({ type: "error", text: "Erro inesperado ao atualizar senha." })
+    } finally {
+      setSavingPassword(false)
+    }
+  }
+
   if (!user) return null
 
   const activeMembers = companyMembers.filter((m) => m.status === "ativo")
@@ -70,7 +119,7 @@ export default function Configuracoes() {
         {/*=====================  TEMA NEON VERDE  =====================*/}
         <style>{`
           /* Fundo geral preto */
-          body, main, div, section, .container, .flex-1 {
+          body, main, section, .container, .flex-1 {
             background-color: #000 !important;
           }
 
@@ -217,6 +266,72 @@ export default function Configuracoes() {
                 </CardContent>
               </Card>
 
+              {/*----------------------  CARD: SEGURANCA  ----------------------*/}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lock className="h-5 w-5" />
+                    Sua senha
+                  </CardTitle>
+                </CardHeader>
+
+                <CardContent>
+                  <form className="space-y-4" onSubmit={handlePasswordSubmit}>
+                    <div>
+                      <Label htmlFor="senha-atual">Senha atual</Label>
+                      <Input
+                        id="senha-atual"
+                        type="password"
+                        value={passwordForm.currentPassword}
+                        onChange={(event) => handlePasswordChange("currentPassword", event.target.value)}
+                        autoComplete="current-password"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="nova-senha">Nova senha</Label>
+                      <Input
+                        id="nova-senha"
+                        type="password"
+                        value={passwordForm.newPassword}
+                        onChange={(event) => handlePasswordChange("newPassword", event.target.value)}
+                        autoComplete="new-password"
+                        minLength={6}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="confirmar-nova-senha">Confirmar nova senha</Label>
+                      <Input
+                        id="confirmar-nova-senha"
+                        type="password"
+                        value={passwordForm.confirmPassword}
+                        onChange={(event) => handlePasswordChange("confirmPassword", event.target.value)}
+                        autoComplete="new-password"
+                        minLength={6}
+                        required
+                      />
+                    </div>
+
+                    {passwordMessage && (
+                      <Alert className={passwordMessage.type === "success" ? "border-green-500 bg-black" : "border-red-500 bg-black"}>
+                        <AlertDescription className={passwordMessage.type === "success" ? "text-green-500" : "text-red-700"}>
+                          {passwordMessage.text}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Button className="w-full" type="submit" disabled={savingPassword}>
+                      {savingPassword ? "Atualizando..." : "Alterar senha"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {isUserAdmin && (
+                <>
               {/*----------------------  CARD: EMPRESA  ----------------------*/}
               <Card>
                 <CardHeader>
@@ -336,12 +451,14 @@ export default function Configuracoes() {
               </Card>
 
               <LeadTagsSettingsCard empresaId={user.id_empresa} />
+                </>
+              )}
             </div>
           </div>
         </main>
       </div>
 
-      {isAddingMember && (
+      {isUserAdmin && isAddingMember && (
         <AddMemberForm
           isOpen={isAddingMember}
           onClose={() => setIsAddingMember(false)}

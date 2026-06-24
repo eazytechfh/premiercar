@@ -122,7 +122,7 @@ export function ListaVeiculos() {
       <Card className="text-center py-12">
         <CardContent>
           <Car className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum veículo no estoque</h3>
+          <h3 className="text-lg font-medium text-white mb-2">Nenhum veículo no estoque</h3>
           <p className="text-gray-500">Adicione veículos ao estoque para começar a gerenciar.</p>
         </CardContent>
       </Card>
@@ -189,7 +189,7 @@ export function ListaVeiculos() {
                       variant="outline"
                       size="sm"
                       disabled={actionLoading === veiculo.id}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
+                      className="text-red-500 hover:text-red-400 hover:bg-[#2a0808] bg-transparent"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

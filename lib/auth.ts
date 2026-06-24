@@ -127,6 +127,85 @@ export async function updateUser(userId: number, userData: Partial<User>): Promi
   return true
 }
 
+export async function updateCurrentUserPassword(
+  currentUser: User,
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ success: boolean; error?: string }> {
+  const senhaAtual = currentPassword.trim()
+  const novaSenha = newPassword.trim()
+
+  if (!senhaAtual || !novaSenha) {
+    return { success: false, error: "Preencha a senha atual e a nova senha." }
+  }
+
+  if (novaSenha.length < 6) {
+    return { success: false, error: "A nova senha deve ter pelo menos 6 caracteres." }
+  }
+
+  if (senhaAtual === novaSenha) {
+    return { success: false, error: "A nova senha precisa ser diferente da senha atual." }
+  }
+
+  const supabase = createClient()
+
+  const { data: user, error: userError } = await supabase
+    .from("AUTORIZAÇÃO")
+    .select("id")
+    .eq("id", currentUser.id)
+    .eq("id_empresa", currentUser.id_empresa)
+    .eq("senha", senhaAtual)
+    .maybeSingle()
+
+  if (userError) {
+    console.error("Error validating current password:", userError)
+    return { success: false, error: "Erro ao validar senha atual. Tente novamente." }
+  }
+
+  if (!user) {
+    return { success: false, error: "Senha atual incorreta." }
+  }
+
+  const { error } = await supabase
+    .from("AUTORIZAÇÃO")
+    .update({
+      senha: novaSenha,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", currentUser.id)
+    .eq("id_empresa", currentUser.id_empresa)
+
+  if (error) {
+    console.error("Error updating password:", error)
+    return { success: false, error: "Erro ao atualizar senha. Tente novamente." }
+  }
+
+  return { success: true }
+}
+
+export async function getVendedorNameForUser(user: User): Promise<string> {
+  if (user.cargo !== "vendedor") {
+    return user.nome_usuario
+  }
+
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from("VENDEDORES")
+    .select("NOME")
+    .eq("ID_EMPRESA", user.id_empresa)
+    .ilike("EMAIL", user.email)
+    .eq("ATIVO", true)
+    .limit(1)
+
+  if (error) {
+    console.error("Error resolving vendedor name from VENDEDORES:", error)
+    return user.nome_usuario
+  }
+
+  return data?.[0]?.NOME || user.nome_usuario
+}
+
 export async function getCompanyMembers(idEmpresa: number): Promise<User[]> {
   const supabase = createClient()
 
@@ -352,6 +431,119 @@ export async function updateMemberCargo(
   if (error) {
     console.error("Error updating member cargo:", error)
     return { success: false, error: "Erro ao atualizar cargo do membro." }
+  }
+
+  return { success: true }
+}
+
+export async function updateMemberDetails(
+  memberId: number,
+  memberData: {
+    nome_usuario: string
+    email: string
+    telefone?: string
+  },
+  currentUser: User,
+): Promise<{ success: boolean; error?: string }> {
+  if (!canManageMembers(currentUser)) {
+    return { success: false, error: "Voce nao tem permissao para editar membros." }
+  }
+
+  const nomeUsuario = memberData.nome_usuario.trim()
+  const email = memberData.email.trim().toLowerCase()
+  const telefone = memberData.telefone?.trim() || null
+
+  if (!nomeUsuario || !email) {
+    return { success: false, error: "Preencha nome e e-mail do vendedor." }
+  }
+
+  const supabase = createClient()
+
+  const { data: member, error: memberError } = await supabase
+    .from("AUTORIZAÇÃO")
+    .select("id, id_empresa, nome_usuario, email, telefone, cargo, status")
+    .eq("id", memberId)
+    .eq("id_empresa", currentUser.id_empresa)
+    .maybeSingle()
+
+  if (memberError || !member) {
+    console.error("Error fetching member before details update:", memberError)
+    return { success: false, error: "Membro nao encontrado para edicao." }
+  }
+
+  const { data: existingUser, error: existingUserError } = await supabase
+    .from("AUTORIZAÇÃO")
+    .select("id")
+    .ilike("email", email)
+    .neq("id", memberId)
+    .maybeSingle()
+
+  if (existingUserError) {
+    console.error("Error checking member e-mail before update:", existingUserError)
+    return { success: false, error: "Erro ao validar e-mail do vendedor." }
+  }
+
+  if (existingUser) {
+    return { success: false, error: "Este e-mail ja esta cadastrado no sistema." }
+  }
+
+  const { error } = await supabase
+    .from("AUTORIZAÇÃO")
+    .update({
+      nome_usuario: nomeUsuario,
+      email,
+      telefone,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", memberId)
+    .eq("id_empresa", currentUser.id_empresa)
+
+  if (error) {
+    console.error("Error updating member details:", error)
+    return { success: false, error: "Erro ao atualizar dados do vendedor." }
+  }
+
+  if (member.cargo === "vendedor") {
+    let vendedorQuery = supabase
+      .from("VENDEDORES")
+      .update({
+        NOME: nomeUsuario,
+        EMAIL: email,
+        TELEFONE: telefone,
+        UPDATED_AT: new Date().toISOString(),
+      })
+      .eq("ID_EMPRESA", currentUser.id_empresa)
+
+    if (member.email) {
+      vendedorQuery = vendedorQuery.eq("EMAIL", member.email)
+    } else {
+      vendedorQuery = vendedorQuery.eq("NOME", member.nome_usuario)
+    }
+
+    const { data: updatedVendedores, error: vendedorUpdateError } = await vendedorQuery.select("ID_VENDEDOR")
+
+    if (vendedorUpdateError) {
+      console.error("Error syncing vendedor details in VENDEDORES:", vendedorUpdateError)
+      return { success: false, error: "Dados atualizados, mas houve erro ao sincronizar a tabela VENDEDORES." }
+    }
+
+    if (!updatedVendedores?.length) {
+      const { error: vendedorInsertError } = await supabase.from("VENDEDORES").insert({
+        NOME: nomeUsuario,
+        TELEFONE: telefone,
+        EMAIL: email,
+        CARGO: "vendedor",
+        ID_EMPRESA: currentUser.id_empresa,
+        ATIVO: member.status !== "inativo",
+        atender: "espera",
+        quantos_lead: 0,
+      })
+
+      if (vendedorInsertError) {
+        console.error("Error creating missing vendedor in VENDEDORES:", vendedorInsertError)
+        return { success: false, error: "Dados atualizados, mas nao foi possivel criar o vendedor em VENDEDORES." }
+      }
+    }
   }
 
   return { success: true }

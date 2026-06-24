@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,16 +21,17 @@ import {
 import {
   type User,
   STATUS_LABELS,
-  STATUS_COLORS,
   CARGO_LABELS,
-  CARGO_COLORS,
   updateMemberStatus,
   updateMemberCargo,
+  updateMemberDetails,
   deleteMember,
   canManageMembers,
 } from "@/lib/auth"
 import {
   Trash2,
+  Pencil,
+  Loader2,
   Shield,
   Clock,
   XCircle,
@@ -48,9 +52,67 @@ interface MembersManagementProps {
 export function MembersManagement({ members, currentUser, onMembersUpdate }: MembersManagementProps) {
   const [loading, setLoading] = useState<number | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<User | null>(null)
+  const [editingMember, setEditingMember] = useState<User | null>(null)
+  const [editForm, setEditForm] = useState({
+    nome_usuario: "",
+    email: "",
+    telefone: "",
+  })
+  const [savingEdit, setSavingEdit] = useState(false)
   const [error, setError] = useState("")
 
   const canManage = canManageMembers(currentUser)
+
+  const openEditMember = (member: User) => {
+    setEditingMember(member)
+    setEditForm({
+      nome_usuario: member.nome_usuario,
+      email: member.email,
+      telefone: member.telefone || "",
+    })
+    setError("")
+  }
+
+  const closeEditMember = () => {
+    setEditingMember(null)
+    setEditForm({
+      nome_usuario: "",
+      email: "",
+      telefone: "",
+    })
+    setSavingEdit(false)
+  }
+
+  const handleEditFormChange = (field: keyof typeof editForm, value: string) => {
+    setEditForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleSaveMemberDetails = async () => {
+    if (!editingMember) return
+
+    if (!canManage) {
+      setError("Voce nao tem permissao para editar membros.")
+      return
+    }
+
+    setSavingEdit(true)
+    setError("")
+
+    try {
+      const result = await updateMemberDetails(editingMember.id, editForm, currentUser)
+
+      if (result.success) {
+        onMembersUpdate()
+        closeEditMember()
+      } else {
+        setError(result.error || "Erro ao atualizar dados do vendedor.")
+      }
+    } catch (err) {
+      setError("Erro ao atualizar dados. Tente novamente.")
+    } finally {
+      setSavingEdit(false)
+    }
+  }
 
   const handleStatusChange = async (memberId: number, newStatus: "ativo" | "pendente" | "inativo") => {
     if (!canManage) {
@@ -161,13 +223,13 @@ export function MembersManagement({ members, currentUser, onMembersUpdate }: Mem
   return (
     <div className="space-y-4">
       {error && (
-        <Alert className="border-red-200 bg-red-50">
+        <Alert className="border-red-500 bg-black">
           <AlertDescription className="text-red-700">{error}</AlertDescription>
         </Alert>
       )}
 
       {!canManage && (
-        <Alert className="border-yellow-200 bg-yellow-50">
+        <Alert className="border-yellow-500 bg-black">
           <Lock className="h-4 w-4 text-yellow-600" />
           <AlertDescription className="text-yellow-700">
             Apenas gestores podem gerenciar membros da equipe.
@@ -177,7 +239,7 @@ export function MembersManagement({ members, currentUser, onMembersUpdate }: Mem
 
       <div className="space-y-3 max-h-60 overflow-y-auto">
         {members.map((member) => (
-          <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border border-[#1F2937] bg-black">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <p className="text-sm font-medium truncate">{member.nome_usuario}</p>
@@ -204,11 +266,11 @@ export function MembersManagement({ members, currentUser, onMembersUpdate }: Mem
                 disabled={loading === member.id || !canManage || member.id === currentUser.id}
               >
                 <SelectTrigger className="w-auto min-w-[120px] bg-transparent border-none hover:bg-transparent">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
                     {getCargoIcon(member.cargo)}
-                    <Badge className={`text-xs ${CARGO_COLORS[member.cargo as keyof typeof CARGO_COLORS]}`}>
+                    <span className="text-xs font-semibold text-white">
                       {CARGO_LABELS[member.cargo as keyof typeof CARGO_LABELS]}
-                    </Badge>
+                    </span>
                   </div>
                 </SelectTrigger>
                 <SelectContent className="bg-black border-[#22C55E] text-white">
@@ -231,11 +293,11 @@ export function MembersManagement({ members, currentUser, onMembersUpdate }: Mem
                   disabled={loading === member.id || !canManage}
                 >
                   <SelectTrigger className="w-auto min-w-[100px] bg-transparent border-none hover:bg-transparent">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       {getStatusIcon(member.status)}
-                      <Badge className={`text-xs ${STATUS_COLORS[member.status as keyof typeof STATUS_COLORS]}`}>
+                      <span className="text-xs font-semibold text-white">
                         {STATUS_LABELS[member.status as keyof typeof STATUS_LABELS]}
-                      </Badge>
+                      </span>
                     </div>
                   </SelectTrigger>
                   <SelectContent className="bg-black border-[#22C55E] text-white">
@@ -250,13 +312,26 @@ export function MembersManagement({ members, currentUser, onMembersUpdate }: Mem
                   </SelectContent>
                 </Select>
 
+                {member.cargo === "vendedor" && canManage && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEditMember(member)}
+                    disabled={loading === member.id}
+                    className="h-8 w-8 p-0 text-white hover:text-white hover:bg-[#16A34A]"
+                    title="Editar vendedor"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
+
                 {member.id !== currentUser.id && canManage && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setDeleteConfirm(member)}
                     disabled={loading === member.id}
-                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="h-8 w-8 p-0 text-red-500 hover:text-red-400 hover:bg-[#2a0808]"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -294,6 +369,72 @@ export function MembersManagement({ members, currentUser, onMembersUpdate }: Mem
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!editingMember} onOpenChange={(open) => !open && closeEditMember()}>
+        <DialogContent className="max-w-md border-[#22C55E] bg-black text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Editar vendedor
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-nome-vendedor">Nome</Label>
+              <Input
+                id="edit-nome-vendedor"
+                value={editForm.nome_usuario}
+                onChange={(event) => handleEditFormChange("nome_usuario", event.target.value)}
+                placeholder="Nome completo"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-email-vendedor">E-mail</Label>
+              <Input
+                id="edit-email-vendedor"
+                type="email"
+                value={editForm.email}
+                onChange={(event) => handleEditFormChange("email", event.target.value)}
+                placeholder="email@exemplo.com"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-telefone-vendedor">Telefone</Label>
+              <Input
+                id="edit-telefone-vendedor"
+                value={editForm.telefone}
+                onChange={(event) => handleEditFormChange("telefone", event.target.value)}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+
+            {error && (
+              <Alert className="border-red-500 bg-black">
+                <AlertDescription className="text-red-700">{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={handleSaveMemberDetails} disabled={savingEdit}>
+                {savingEdit ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar"
+                )}
+              </Button>
+              <Button type="button" variant="outline" onClick={closeEditMember} disabled={savingEdit}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

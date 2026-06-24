@@ -73,7 +73,7 @@ export function EditableVeiculoField({
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyPress}
-            className="text-xs h-7 pl-6 pr-1 border-blue-300 focus:border-blue-500"
+            className="text-xs h-7 pl-6 pr-1 border-blue-500 bg-black text-white focus:border-blue-400"
             placeholder="Ex: Honda Civic 2020"
             autoFocus
             disabled={loading}
@@ -93,7 +93,7 @@ export function EditableVeiculoField({
             variant="outline"
             onClick={handleCancel}
             disabled={loading}
-            className="h-7 w-7 p-0 border-gray-300 hover:bg-gray-50 bg-transparent"
+            className="h-7 w-7 p-0 border-gray-600 bg-transparent text-white hover:bg-[#111827]"
           >
             <X className="h-3 w-3" />
           </Button>
@@ -104,14 +104,14 @@ export function EditableVeiculoField({
 
   return (
     <div
-      className={`flex items-center justify-between group cursor-pointer hover:bg-blue-50 rounded p-2 transition-colors border border-blue-200 ${className}`}
+      className={`flex items-center justify-between group cursor-pointer rounded p-2 transition-colors border border-blue-400 bg-black hover:bg-[#0b1220] ${className}`}
       onClick={handleStartEdit}
     >
       <div className="flex items-center gap-2">
         <Car className="h-4 w-4 text-blue-600" />
         <div>
-          <span className="text-sm font-medium text-blue-800">Veículo de Interesse</span>
-          <div className="text-sm text-gray-700">
+          <span className="text-sm font-medium text-white">Veículo de Interesse</span>
+          <div className="text-sm text-white">
             {currentVeiculo || <span className="text-gray-400 italic">Clique para adicionar veículo</span>}
           </div>
         </div>

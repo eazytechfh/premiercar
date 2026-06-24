@@ -92,19 +92,19 @@ export function LeadTagsManager({ leadId, empresaId, selectedTags, onTagsChange 
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-green-200 bg-green-50 p-4">
+    <div className="space-y-3 rounded-lg border border-green-400 bg-black p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 text-green-800">
+          <div className="flex items-center gap-2 text-[#22C55E]">
             <Tags className="h-4 w-4" />
             <span className="text-sm font-semibold">Etiquetas</span>
           </div>
-          <p className="mt-1 text-xs text-gray-600">Vincule etiquetas ao lead ou crie uma nova na hora.</p>
+          <p className="mt-1 text-xs text-gray-300">Vincule etiquetas ao lead ou crie uma nova na hora.</p>
         </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline" className="border-green-500 text-green-800 hover:bg-green-100">
+            <Button size="sm" variant="outline" className="border-green-500 bg-black text-[#22C55E] hover:bg-[#052e16]">
               <Plus className="mr-2 h-4 w-4" />
               Adicionar etiqueta
             </Button>
@@ -218,7 +218,7 @@ export function LeadTagsManager({ leadId, empresaId, selectedTags, onTagsChange 
                       >
                         <span className="truncate">{tag.nome}</span>
                         <Badge
-                          className={isSelected ? colorMeta.badgeClassName : "bg-gray-100 text-gray-700"}
+                          className={isSelected ? colorMeta.badgeClassName : "border border-[#374151] bg-black text-gray-200"}
                           style={isSelected ? colorMeta.badgeStyle : undefined}
                         >
                           {isSelected ? "Selecionada" : "Adicionar"}
@@ -235,7 +235,7 @@ export function LeadTagsManager({ leadId, empresaId, selectedTags, onTagsChange 
 
       <div className="flex flex-wrap gap-2">
         {selectedTags.length === 0 ? (
-          <span className="text-sm italic text-gray-500">Nenhuma etiqueta vinculada a este lead.</span>
+          <span className="text-sm italic text-gray-300">Nenhuma etiqueta vinculada a este lead.</span>
         ) : (
           selectedTags.map((tag) => (
             <span
